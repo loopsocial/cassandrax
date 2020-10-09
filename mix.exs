@@ -1,0 +1,44 @@
+defmodule Cassandrax.MixProject do
+  use Mix.Project
+
+  @version "0.0.1"
+  @url "https://github.com/loopsocial/cassandrax"
+  @maintainers ["Thiago Dias"]
+
+  def project do
+    [
+      name: "Cassandrax",
+      app: :cassandrax,
+      version: @version,
+      elixir: "~> 1.10",
+      source_url: @url,
+      start_permanent: Mix.env() == :prod,
+      deps: deps(),
+      package: package(),
+      description: "An Elixir Cassandra ORM built on top of Xandra driver."
+    ]
+  end
+
+  # Run "mix help compile.app" to learn about applications.
+  def application do
+    [
+      extra_applications: [:logger]
+    ]
+  end
+
+  # Run "mix help deps" to learn about dependencies.
+  defp deps do
+    [
+      {:xandra, "~> 0.13"}
+    ]
+  end
+
+  defp package do
+    [
+      maintainers: @maintainers,
+      licenses: ["MIT"],
+      links: %{github: @url},
+      files: ~w(lib) ++ ~w(CHANGELOG.md LICENSE mix.exs README.md)
+    ]
+  end
+end
