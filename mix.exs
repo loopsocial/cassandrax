@@ -10,7 +10,7 @@ defmodule Cassandrax.MixProject do
       name: "Cassandrax",
       app: :cassandrax,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.9",
       source_url: @url,
       start_permanent: Mix.env() == :prod,
       deps: deps(),

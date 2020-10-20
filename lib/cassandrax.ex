@@ -1,18 +1,5 @@
 defmodule Cassandrax do
   @moduledoc """
-  Documentation for `Cassandrax`.
+  Do not start here...
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Cassandrax.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
