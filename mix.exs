@@ -29,7 +29,8 @@ defmodule Cassandrax.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:xandra, "~> 0.13"}
+      {:xandra, "~> 0.13"},
+      {:ecto, "~> 3.4.0"}
     ]
   end
 

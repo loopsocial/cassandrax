@@ -12,7 +12,7 @@ defmodule Cassandrax.Keyspace.Supervisor do
     Supervisor.start_link(__MODULE__, init_args, supervisor_opts)
   end
 
-  def runtime_config(type, keyspace, otp_app, opts) do
+  def runtime_config(keyspace, otp_app, opts) do
     config = Application.get_env(otp_app, keyspace, [])
 
     {authentication, config} = pop_authentication_config(config)
@@ -24,7 +24,7 @@ defmodule Cassandrax.Keyspace.Supervisor do
       |> Keyword.merge(authentication)
       |> Keyword.merge(name: keyspace)
 
-    keyspace_init(type, keyspace, config)
+    keyspace_init(keyspace, config)
   end
 
   defp pop_authentication_config(config) do
@@ -50,9 +50,9 @@ defmodule Cassandrax.Keyspace.Supervisor do
   end
 
   # This allows Users to override configs on runtime by defining `c:init/2` keyspace callback
-  defp keyspace_init(type, keyspace, config) do
+  defp keyspace_init(keyspace, config) do
     if Code.ensure_loaded?(keyspace) and function_exported?(keyspace, :init, 2) do
-      keyspace.init(type, config)
+      keyspace.init(config)
     else
       {:ok, config}
     end
@@ -62,7 +62,7 @@ defmodule Cassandrax.Keyspace.Supervisor do
 
   @doc false
   def init({keyspace, otp_app, opts}) do
-    {:ok, opts} = runtime_config(:supervisor, keyspace, otp_app, opts)
+    {:ok, opts} = runtime_config(keyspace, otp_app, opts)
     child_spec = %{id: make_ref(), start: {Xandra.Cluster, :start_link, [opts]}}
     Supervisor.init([child_spec], strategy: :one_for_one)
   end

@@ -4,14 +4,14 @@ defmodule Cassandrax.Keyspace do
       @behaviour Cassandrax.Keyspace
       @otp_app Keyword.fetch!(opts, :otp_app)
       @keyspace_name Keyword.fetch!(opts, :name)
+      @default_write_consistency Keyword.get(opts, :default_write_consistency, :one)
+      @default_read_consistency Keyword.get(opts, :default_read_consistency, :one)
 
-      # TODO @tdtadeu Why create the following function?
-      # def config do
-      #   {:ok, config} =
-      #     Cassandrax.Keyspace.Supervisor.runtime_config(:runtime, __MODULE__, @otp_app, [])
+      def config do
+        {:ok, config} = Cassandrax.Keyspace.Supervisor.runtime_config(__MODULE__, @otp_app, [])
 
-      #   config
-      # end
+        config
+      end
 
       def child_spec(opts) do
         %{
@@ -21,9 +21,52 @@ defmodule Cassandrax.Keyspace do
         }
       end
 
+      def __keyspace__, do: @keyspace_name
+
+      def __defaults__(:write_consistency) do
+        write_consistency = __MODULE__.config() |> Keyword.get(:default_write_consistency)
+        [consistency: write_consistency]
+      end
+
+      def __defaults__(:read_consistency) do
+        read_consistency = __MODULE__.config() |> Keyword.get(:default_read_consistency)
+        [consistency: read_consistency]
+      end
+
       def start_link(opts \\ []) do
         Cassandrax.Keyspace.Supervisor.start_link(__MODULE__, @otp_app, opts)
       end
+
+      ## Schemas
+
+      def insert(struct, opts \\ []),
+        do: Cassandrax.Keyspace.Schema.insert(__MODULE__, struct, opts)
+
+      # def update(struct, opts \\ []),
+      #   do: Cassandrax.Keyspace.Schema.update(__MODULE__, struct, opts)
+
+      def delete(struct, opts \\ []),
+        do: Cassandrax.Keyspace.Schema.delete(__MODULE__, struct, opts)
+
+      def insert!(struct, opts \\ []),
+        do: Cassandrax.Keyspace.Schema.insert!(__MODULE__, struct, opts)
+
+      # def update!(struct, opts \\ []),
+      #   do: Cassandrax.Keyspace.Schema.update!(__MODULE__, struct, opts)
+
+      def delete!(struct, opts \\ []),
+        do: Cassandrax.Keyspace.Schema.delete!(__MODULE__, struct, opts)
+
+      ## Queryable
+
+      # def all(queryable, opts \\ []),
+      #   do: Cassandrax.Keyspace.Queryable.all(__MODULE__, queryable, opts)
+
+      # def get(queryable, id, opts \\ []),
+      #   do: Cassanxrax.Keyspace.Queryable.get(__MODULE__, queryable, id, opts)
+
+      # def one(queryable, id, opts \\ []),
+      #   do: Cassanxrax.Keyspace.Queryable.get(__MODULE__, queryable, opts)
     end
   end
 
