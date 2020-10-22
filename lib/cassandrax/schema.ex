@@ -23,9 +23,7 @@ defmodule Cassandrax.Schema do
       # Include the custom types available in CassandraDB, but not mapped by Ecto.Schema
       alias Cassandrax.Schema.MapSetType
 
-      #       # These will hold the primary keys
-      #       Module.register_attribute(__MODULE__, :partition_key, accumulate: true)
-      #       Module.register_attribute(__MODULE__, :clustering_key, accumulate: true)
+      Module.register_attribute(__MODULE__, :partition_key, accumulate: true)
     end
   end
 
@@ -64,11 +62,11 @@ defmodule Cassandrax.Schema do
                 }"
         end
 
-        # Module.put_attribute(__MODULE__, :partition_key, partition_key)
+        Module.put_attribute(__MODULE__, :partition_key, partition_key)
       end
 
-      if !partition_key or partition_key == [],
-        do: raise("@partition_key cannot be empty, nil or false")
+      if !@partition_key or @partition_key == [],
+        do: raise("@primary_key cannot define an empty, nil or false partition_key")
 
       for clustering_key <- clustering_keys do
         if clustering_key not in schema_fields do
@@ -77,12 +75,7 @@ defmodule Cassandrax.Schema do
                   inspect(clustering_key)
                 }"
         end
-
-        # Module.put_attribute(__MODULE__, :clustering_key, clustering_key)
       end
-
-      # def __schema__(:partition_key), do: @partition_key |> Enum.reverse()
-      # def __schema__(:clustering_key), do: @clustering_key |> Enum.reverse()
 
       def parse(nil), do: nil
 
