@@ -42,8 +42,8 @@ defmodule Cassandrax.Keyspace do
       def insert(struct, opts \\ []),
         do: Cassandrax.Keyspace.Schema.insert(__MODULE__, struct, opts)
 
-      # def update(struct, opts \\ []),
-      #   do: Cassandrax.Keyspace.Schema.update(__MODULE__, struct, opts)
+      def update(struct, opts \\ []),
+        do: Cassandrax.Keyspace.Schema.update(__MODULE__, struct, opts)
 
       def delete(struct, opts \\ []),
         do: Cassandrax.Keyspace.Schema.delete(__MODULE__, struct, opts)
@@ -51,8 +51,8 @@ defmodule Cassandrax.Keyspace do
       def insert!(struct, opts \\ []),
         do: Cassandrax.Keyspace.Schema.insert!(__MODULE__, struct, opts)
 
-      # def update!(struct, opts \\ []),
-      #   do: Cassandrax.Keyspace.Schema.update!(__MODULE__, struct, opts)
+      def update!(struct, opts \\ []),
+        do: Cassandrax.Keyspace.Schema.update!(__MODULE__, struct, opts)
 
       def delete!(struct, opts \\ []),
         do: Cassandrax.Keyspace.Schema.delete!(__MODULE__, struct, opts)
