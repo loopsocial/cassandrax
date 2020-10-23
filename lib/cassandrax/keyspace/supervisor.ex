@@ -5,16 +5,18 @@ defmodule Cassandrax.Keyspace.Supervisor do
 
   @defaults [timeout: 100, pool_size: 50]
 
-  def start_link(keyspace, otp_app, opts) do
-    supervisor_opts = [name: :"#{keyspace}Supervisor"]
+  def start_link(keyspace, keyspace_supervisor, otp_app, opts) do
+    supervisor_opts = [name: keyspace_supervisor]
     init_args = {keyspace, otp_app, opts}
 
     Supervisor.start_link(__MODULE__, init_args, supervisor_opts)
   end
 
+  # By default the runtime configs do not include a after_connect function to call
+  # USE keyspace_name, so you can use this connection to run migrations that actually create
+  # the keyspace
   def runtime_config(keyspace, otp_app, opts) do
     config = Application.get_env(otp_app, keyspace, [])
-
     {authentication, config} = pop_authentication_config(config)
 
     config =

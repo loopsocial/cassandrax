@@ -34,7 +34,12 @@ defmodule Cassandrax.Keyspace do
       end
 
       def start_link(opts \\ []) do
-        Cassandrax.Keyspace.Supervisor.start_link(__MODULE__, @otp_app, opts)
+        Cassandrax.Keyspace.Supervisor.start_link(
+          __MODULE__,
+          __MODULE__.Supervisor,
+          @otp_app,
+          opts
+        )
       end
 
       ## Schemas
