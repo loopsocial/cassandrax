@@ -79,9 +79,9 @@ defmodule Cassandrax.Schema do
         end
       end
 
-      def parse(nil), do: nil
+      def from_map(nil), do: nil
 
-      def parse(data) when is_map(data) do
+      def from_map(data) when is_map(data) do
         sanitized_map =
           apply(__MODULE__, :__schema__, [:fields])
           |> Enum.map(fn key -> {key, Map.get(data, to_string(key))} end)
