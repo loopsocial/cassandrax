@@ -64,14 +64,11 @@ defmodule Cassandrax.Keyspace do
 
       ## Queryable
 
-      # def all(queryable, opts \\ []),
-      #   do: Cassandrax.Keyspace.Queryable.all(__MODULE__, queryable, opts)
+      def all(queryable, opts \\ []),
+        do: Cassandrax.Keyspace.Queryable.all(__MODULE__, queryable, opts)
 
-      # def get(queryable, id, opts \\ []),
-      #   do: Cassanxrax.Keyspace.Queryable.get(__MODULE__, queryable, id, opts)
-
-      # def one(queryable, id, opts \\ []),
-      #   do: Cassanxrax.Keyspace.Queryable.get(__MODULE__, queryable, opts)
+      def get(queryable, primary_key, opts \\ []),
+        do: Cassandrax.Keyspace.Queryable.get(__MODULE__, queryable, primary_key, opts)
     end
   end
 
