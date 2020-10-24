@@ -8,26 +8,8 @@ defmodule Cassandrax.Query.Builder do
   """
   def build(type, queryable, value) do
     quote do
-      query = Cassandrax.Query.Builder.query(unquote(queryable))
+      query = Cassandrax.Queryable.to_query(unquote(queryable))
       Cassandrax.Query.Builder.add_fragment(unquote(type), unquote(value), query)
-    end
-  end
-
-  def query(%Cassandrax.Query{} = query), do: query
-
-  def query(schema) when is_atom(schema) do
-    try do
-      schema.__schema__(:query)
-    rescue
-      UndefinedFunctionError ->
-        description =
-          if :code.is_loaded(schema) do
-            "the given module does not provide a schema"
-          else
-            "the given module does not exist"
-          end
-
-        raise CompileError, description: description
     end
   end
 

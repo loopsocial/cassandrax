@@ -37,18 +37,16 @@ defmodule Cassandrax.Schema do
       if !pk or pk == [],
         do: raise("You must define a @primary_key before the schema definition")
 
-      # Set it to false to bypass Ecto primary_key verification
-      @primary_key false
-
       [partition_keys | clustering_keys] = pk
-
-      # This allows Users to set the partition key as an atom or as a list
       partition_keys = List.flatten([partition_keys])
 
-      # Set ecto_primary_keys to gain the helper function __schema__(:primary_key)
-      for key <- pk, do: Module.put_attribute(__MODULE__, :ecto_primary_keys, key)
+      @primary_key [partition_keys, clustering_keys]
 
       def __schema__(:query), do: %Cassandrax.Query{from: unquote(source), schema: __MODULE__}
+      def __schema__(:primary_key), do: @primary_key
+
+      # Set it to false to bypass Ecto primary_key verification
+      @primary_key false
 
       # Use Ecto's schema to leverage field definitions and metadata
       schema(unquote(source), do: unquote(block))

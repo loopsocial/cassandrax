@@ -13,7 +13,7 @@ defmodule Cassandrax.Query do
             per_partition_limit: nil,
             group_bys: [],
             order_bys: [],
-            allow_filtering: nil
+            allow_filtering: false
 
   defmacro select(queryable, select \\ []), do: Builder.build(:select, queryable, select)
   defmacro where(queryable, where \\ []), do: Builder.build(:where, queryable, where)
