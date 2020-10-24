@@ -6,18 +6,29 @@ defmodule Cassandrax.Keyspace.Queryable do
 
   def all(keyspace, queryable, opts) when is_list(opts) do
     # TODO this is where the magic is assembled
-    {keyspace, queryable, opts}
+    [keyspace, queryable, opts]
   end
 
   @doc """
   Implementation for `Cassandrax.Keyspace.get/3`.
   """
   def get(keyspace, queryable, primary_key, opts) when is_list(primary_key) do
-    all(keyspace, query_for_get(queryable, primary_key), opts)
+    one(keyspace, query_for_get(queryable, primary_key), opts)
   end
 
   def get(keyspace, queryable, primary_key, opts) when is_map(primary_key),
     do: get(keyspace, queryable, Keyword.new(primary_key), opts)
+
+  @doc """
+  Implementation for `Cassandrax.Keyspace.one/2`.
+  """
+  def one(keyspace, queryable, opts) do
+    case all(keyspace, queryable, opts) do
+      [one] -> one
+      [] -> nil
+      other -> raise Cassandrax.MultipleResultsError, queryable: queryable, count: length(other)
+    end
+  end
 
   defp query_for_get(_queryable, empty) when is_nil(empty) or empty == [] do
     raise ArgumentError, "cannot perform Cassandrax.Keyspace.get/2 with an empty primary key"

@@ -69,6 +69,9 @@ defmodule Cassandrax.Keyspace do
 
       def get(queryable, primary_key, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.get(__MODULE__, queryable, primary_key, opts)
+
+      def one(queryable, opts \\ []),
+        do: Cassandrax.Keyspace.Queryable.one(__MODULE__, queryable, opts)
     end
   end
 
