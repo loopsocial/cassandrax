@@ -1,10 +1,10 @@
 defmodule Cassandrax.Query.Builder do
   @moduledoc """
-  Converts a data structure into an `Ecto.Query`.
+  Converts a data structure into an `Cassandrax.Query`.
   """
 
   @doc """
-  Converts the given `data` into an `Ecto.Query`.
+  Converts the given `data` into an `Cassandrax.Query`.
   """
   def build(type, queryable, value) do
     quote do
