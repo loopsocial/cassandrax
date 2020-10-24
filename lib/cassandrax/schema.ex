@@ -48,6 +48,8 @@ defmodule Cassandrax.Schema do
       # Set ecto_primary_keys to gain the helper function __schema__(:primary_key)
       for key <- pk, do: Module.put_attribute(__MODULE__, :ecto_primary_keys, key)
 
+      def __schema__(:query), do: %Cassandrax.Query{from: unquote(source), schema: __MODULE__}
+
       # Use Ecto's schema to leverage field definitions and metadata
       schema(unquote(source), do: unquote(block))
 
