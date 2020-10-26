@@ -21,9 +21,7 @@ defmodule Cassandrax.Query do
   defmacro order_by(queryable, order_by \\ []), do: Builder.build(:order_by, queryable, order_by)
   defmacro group_by(queryable, group_by \\ []), do: Builder.build(:group_by, queryable, group_by)
   defmacro distinct(queryable, distinct \\ []), do: Builder.build(:distinct, queryable, distinct)
-
-  defmacro allow_filtering(queryable),
-    do: Builder.build(:allow_filtering, queryable, true)
+  defmacro allow_filtering(queryable), do: Builder.build(:allow_filtering, queryable, true)
 
   defmacro per_partition_limit(queryable, per_partition_limit \\ @per_partition_limit_default),
     do: Builder.build(:per_partition_limit, queryable, per_partition_limit)

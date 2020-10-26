@@ -44,7 +44,8 @@ defmodule Cassandrax.Keyspace.Queryable do
 
     partition_filters = filters_for_partition(allow_filtering, partition_keys, partition_filters)
     other_filters = filters_for_others(allow_filtering, clustering_keys, other_filters)
-    Cassandrax.Query.where(query, Keyword.merge(partition_filters, other_filters))
+    filters = Keyword.merge(partition_filters, other_filters)
+    Cassandrax.Query.where(query, filters)
   end
 
   defp query_for_get(_queryable, value) do
