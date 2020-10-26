@@ -1,9 +1,8 @@
 defmodule Cassandrax.Schema do
   @moduledoc """
-  Defines a schema in a NoSQL database.
+  Defines a schema.
 
-  A NoSQL.Schema defines the schema for a table that stores data modeled after a query. This means
-  the structure of the information is directly related to the query you will perform.
+  This schema is used to map data fetched from a CassandraDB node into an Elixir struct.
   """
 
   @doc """
@@ -30,7 +29,7 @@ defmodule Cassandrax.Schema do
   @doc """
   Defines an embedded schema for the Cassandra table with the given field definitions.
   """
-  defmacro no_sql_schema(source, do: block) do
+  defmacro table(source, do: block) do
     quote do
       pk = @primary_key
 
