@@ -56,12 +56,20 @@ defmodule Cassandrax.Keyspace.Schema do
   @doc """
   Implementation for `Cassandrax.Keyspace.insert/2`.
   """
-  def insert(keyspace, %Changeset{} = changeset, opts), do: do_insert(keyspace, changeset, opts)
+  def insert(keyspace, %Changeset{} = changeset, opts) do
+    {statement, values, changeset} = setup_insert(keyspace, changeset)
+    {:ok, prepared} = Cassandrax.Connection.prepare(keyspace, statement)
+
+    case Cassandrax.Connection.execute(keyspace, prepared, values, opts) do
+      {:ok, _void_response} -> load_changes(changeset, :loaded)
+      {:error, error} -> {:error, error}
+    end
+  end
 
   def insert(keyspace, %{__struct__: _} = struct, opts),
-    do: do_insert(keyspace, Ecto.Changeset.change(struct), opts)
+    do: insert(keyspace, Ecto.Changeset.change(struct), opts)
 
-  defp do_insert(keyspace, %Changeset{valid?: true} = changeset, opts) do
+  defp setup_insert(keyspace, %Changeset{valid?: true} = changeset) do
     struct = changeset.data
     schema = struct.__struct__
     fields = schema.__schema__(:fields)
@@ -70,17 +78,13 @@ defmodule Cassandrax.Keyspace.Schema do
 
     changeset = apply_defaults(changeset, struct, fields)
     statement = Cassandrax.Connection.insert(keyspace_name, table, changeset.changes)
-    {:ok, prepared_statement} = Cassandrax.Connection.prepare(keyspace, statement)
-
     values = Enum.map(changeset.changes, fn {_field, value} -> value end)
 
-    case Cassandrax.Connection.execute(keyspace, prepared_statement, values, opts) do
-      {:ok, _void_response} -> load_changes(changeset)
-      {:error, error} -> {:error, error}
-    end
+    {statement, values, changeset}
   end
 
-  defp do_insert(_keyspace, %Changeset{valid?: false} = changeset, _opts), do: {:error, changeset}
+  defp setup_insert(_keyspace, %Changeset{valid?: false} = changeset),
+    do: {:error, changeset}
 
   defp apply_defaults(%{changes: changes, types: types} = changeset, struct, fields) do
     changes =
@@ -105,13 +109,20 @@ defmodule Cassandrax.Keyspace.Schema do
   @doc """
   Implementation for `Cassandrax.Keyspace.update/2`.
   """
-  def update(keyspace, %Ecto.Changeset{} = changeset, opts),
-    do: do_update(keyspace, changeset, opts)
+  def update(keyspace, %Ecto.Changeset{} = changeset, opts) do
+    {statement, values, changeset} = setup_update(keyspace, changeset)
+    {:ok, prepared} = Cassandrax.Connection.prepare(keyspace, statement)
+
+    case Cassandrax.Connection.execute(keyspace, prepared, values, opts) do
+      {:ok, _void_response} -> load_changes(changeset, :loaded)
+      {:error, error} -> {:error, error}
+    end
+  end
 
   def update(keyspace, %{__struct__: _} = struct, opts),
-    do: do_update(keyspace, Ecto.Changeset.change(struct), opts)
+    do: update(keyspace, Ecto.Changeset.change(struct), opts)
 
-  defp do_update(keyspace, %Changeset{valid?: true} = changeset, opts) do
+  defp setup_update(keyspace, %Changeset{valid?: true} = changeset) do
     struct = changeset.data
     schema = struct.__struct__
     primary_key = schema.__schema__(:primary_key) |> List.flatten()
@@ -119,29 +130,32 @@ defmodule Cassandrax.Keyspace.Schema do
     keyspace_name = keyspace.__keyspace__
 
     statement = Cassandrax.Connection.update(keyspace_name, table, changeset.changes, primary_key)
-    {:ok, prepared_statement} = Cassandrax.Connection.prepare(keyspace, statement)
-
     values = Enum.map(changeset.changes, fn {_field, value} -> value end)
     values = values ++ Enum.map(primary_key, fn field -> Map.get(struct, field) end)
 
-    case Cassandrax.Connection.execute(keyspace, prepared_statement, values, opts) do
-      {:ok, _void_response} -> load_changes(changeset)
-      {:error, error} -> {:error, error}
-    end
+    {statement, values, changeset}
   end
 
-  defp do_update(_keyspace, %Changeset{valid?: false} = changeset, _opts), do: {:error, changeset}
+  defp setup_update(_keyspace, %Changeset{valid?: false} = changeset),
+    do: {:error, changeset}
 
   @doc """
   Implementation for `Cassandrax.Keyspace.delete/2`.
   """
-  def delete(keyspace, %Ecto.Changeset{} = changeset, opts),
-    do: do_delete(keyspace, changeset, opts)
+  def delete(keyspace, %Ecto.Changeset{} = changeset, opts) do
+    {statement, values, changeset} = setup_delete(keyspace, changeset)
+    {:ok, prepared} = Cassandrax.Connection.prepare(keyspace, statement)
+
+    case Cassandrax.Connection.execute(keyspace, prepared, values, opts) do
+      {:ok, _void_response} -> load_changes(changeset, :deleted)
+      {:error, error} -> {:error, error}
+    end
+  end
 
   def delete(keyspace, %{__struct__: _} = struct, opts),
-    do: do_delete(keyspace, Ecto.Changeset.change(struct), opts)
+    do: delete(keyspace, Ecto.Changeset.change(struct), opts)
 
-  defp do_delete(keyspace, %Changeset{valid?: true} = changeset, opts) do
+  defp setup_delete(keyspace, %Changeset{valid?: true} = changeset) do
     struct = changeset.data
     schema = struct.__struct__
     primary_key = schema.__schema__(:primary_key) |> List.flatten()
@@ -149,26 +163,61 @@ defmodule Cassandrax.Keyspace.Schema do
     keyspace_name = keyspace.__keyspace__
 
     statement = Cassandrax.Connection.delete(keyspace_name, table, primary_key)
-    {:ok, prepared_statement} = Cassandrax.Connection.prepare(keyspace, statement)
-
     values = Enum.map(primary_key, fn field -> Map.get(struct, field) end)
 
-    case Cassandrax.Connection.execute(keyspace, prepared_statement, values, opts) do
-      {:ok, _void_response} -> load_changes(changeset)
-      {:error, error} -> {:error, error}
-    end
+    {statement, values, changeset}
   end
 
-  defp do_delete(_keyspace, %Changeset{valid?: false} = changeset, _opts), do: {:error, changeset}
+  defp setup_delete(_keyspace, %Changeset{valid?: false} = changeset),
+    do: {:error, changeset}
 
-  defp load_changes(%{data: struct, changes: changes}) do
+  @doc """
+  Implementation for `Cassandrax.Keyspace.batch_insert/2`
+  """
+  def batch_insert(keyspace, batch, %Changeset{} = changeset) do
+    {statement, values, _changeset} = setup_insert(keyspace, changeset)
+    Cassandrax.Keyspace.Batch.add(batch, statement, values)
+  end
+
+  def batch_insert(keyspace, batch, %{__struct__: _} = struct),
+    do: batch_insert(keyspace, batch, Ecto.Changeset.change(struct))
+
+  @doc """
+  Implementation for `Cassandrax.Keyspace.batch_update/2`
+  """
+  def batch_update(keyspace, batch, %Changeset{} = changeset) do
+    {statement, values, _changeset} = setup_update(keyspace, changeset)
+    Cassandrax.Keyspace.Batch.add(batch, statement, values)
+  end
+
+  def batch_update(keyspace, batch, %{__struct__: _} = struct),
+    do: batch_update(keyspace, batch, Ecto.Changeset.change(struct))
+
+  @doc """
+  Implementation for `Cassandrax.Keyspace.batch_delete/2`
+  """
+  def batch_delete(keyspace, batch, %Changeset{} = changeset) do
+    {statement, values, _changeset} = setup_delete(keyspace, changeset)
+    Cassandrax.Keyspace.Batch.add(batch, statement, values)
+  end
+
+  def batch_delete(keyspace, batch, %{__struct__: _} = struct),
+    do: batch_delete(keyspace, batch, Ecto.Changeset.change(struct))
+
+  defp load_changes(%{data: struct, changes: changes}, state) do
     changes =
       Enum.reduce(changes, changes, fn {key, _value}, changes ->
         if Map.has_key?(struct, key), do: changes, else: Map.delete(changes, key)
       end)
 
-    loaded_changes = Map.merge(struct, changes)
+    loaded_changes =
+      struct
+      |> Map.merge(changes)
+      |> update_metadata(state)
 
     {:ok, loaded_changes}
   end
+
+  defp update_metadata(%{__meta__: meta} = struct, state),
+    do: %{struct | __meta__: %{meta | state: state}}
 end

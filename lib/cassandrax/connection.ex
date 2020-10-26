@@ -123,20 +123,30 @@ defmodule Cassandrax.Connection do
     end)
   end
 
-  def prepare(keyspace, iodata) when is_list(iodata) do
+  def prepare(keyspace_or_batch, iodata) when is_list(iodata) do
     statement = IO.iodata_to_binary(iodata)
-    prepare(keyspace, statement)
+    prepare(keyspace_or_batch, statement)
   end
 
-  def prepare(keyspace, query_statement) when is_binary(query_statement) do
-    Xandra.Cluster.prepare(keyspace, query_statement)
-  end
+  def prepare(%Cassandrax.Keyspace.Batch{conn: conn}, query_statement)
+      when is_binary(query_statement),
+      do: Xandra.prepare(conn, query_statement)
 
-  def execute(keyspace, prepared_statement, values, opts) do
+  def prepare(keyspace, query_statement) when is_binary(query_statement),
+    do: Xandra.Cluster.prepare(keyspace, query_statement)
+
+  def execute(keyspace, %Xandra.Prepared{} = prepared, values, opts) do
     default_opts = keyspace.__defaults__(:write_consistency)
     opts = default_opts |> Keyword.merge(opts)
 
-    Xandra.Cluster.execute(keyspace, prepared_statement, values, opts)
+    Xandra.Cluster.execute(keyspace, prepared, values, opts)
+  end
+
+  def execute(keyspace, %Cassandrax.Keyspace.Batch{conn: conn, xandra_batch: xandra_batch}, opts) do
+    default_opts = keyspace.__defaults__(:write_consistency)
+    opts = default_opts |> Keyword.merge(opts)
+
+    Xandra.execute(conn, xandra_batch, opts)
   end
 
   defp quote_name(atom) when is_atom(atom), do: quote_name(Atom.to_string(atom))

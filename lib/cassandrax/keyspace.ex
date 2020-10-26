@@ -72,6 +72,21 @@ defmodule Cassandrax.Keyspace do
 
       def one(queryable, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.one(__MODULE__, queryable, opts)
+
+      ## Batch
+
+      def batch(opts \\ [], fun) do
+        Cassandrax.Keyspace.Batch.run(__MODULE__, fun, opts)
+      end
+
+      def batch_insert(%Cassandrax.Keyspace.Batch{} = batch, struct),
+        do: Cassandrax.Keyspace.Schema.batch_insert(__MODULE__, batch, struct)
+
+      def batch_update(%Cassandrax.Keyspace.Batch{} = batch, struct),
+        do: Cassandrax.Keyspace.Schema.batch_update(__MODULE__, batch, struct)
+
+      def batch_delete(%Cassandrax.Keyspace.Batch{} = batch, struct),
+        do: Cassandrax.Keyspace.Schema.batch_delete(__MODULE__, batch, struct)
     end
   end
 
