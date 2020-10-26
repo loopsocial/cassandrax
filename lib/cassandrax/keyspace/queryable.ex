@@ -5,8 +5,17 @@ defmodule Cassandrax.Keyspace.Queryable do
   require Cassandrax.Query
 
   def all(keyspace, queryable, opts) when is_list(opts) do
-    Cassandrax.Connection.all(keyspace, queryable, opts)
+    {statement, values} = Cassandrax.Connection.all(keyspace, queryable)
+
+    with {:ok, prepared} <- Cassandrax.Connection.prepare(keyspace, statement),
+         {:ok, results} <- Cassandrax.Connection.execute(keyspace, prepared, values, opts) do
+      convert_results(queryable, results)
+    else
+      {:error, error} -> raise error
+    end
   end
+
+  defp convert_results(%{schema: schema}, results), do: Enum.map(results, &schema.convert/1)
 
   @doc """
   Implementation for `Cassandrax.Keyspace.get/3`.

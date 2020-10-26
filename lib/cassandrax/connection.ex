@@ -1,5 +1,5 @@
 defmodule Cassandrax.Connection do
-  def all(keyspace, queryable, opts) do
+  def all(keyspace, queryable) do
     select = select(queryable)
     from = from(queryable, keyspace.__keyspace__)
     {where, filters} = where(queryable)
@@ -21,14 +21,7 @@ defmodule Cassandrax.Connection do
     ]
 
     values = filters ++ per_partition_limit_value ++ limit_value
-
-    with {:ok, prepared_statement} <- prepare(keyspace, statement),
-         {:ok, results} <- execute(keyspace, prepared_statement, values, opts) do
-      convert_results(queryable, results)
-    else
-      {:error, %Xandra.Error{message: message}} ->
-        {:error, %Cassandrax.QueryError{message: message}}
-    end
+    {statement, values}
   end
 
   defp select(%{select: [], distinct: []}), do: ["SELECT *"]
@@ -89,9 +82,6 @@ defmodule Cassandrax.Connection do
   defp allow_filtering(%{allow_filtering: false}), do: []
   defp allow_filtering(%{allow_filtering: true}), do: [" ALLOW FILTERING"]
 
-  defp convert_results(%{schema: schema}, results),
-    do: Enum.map(results, &schema.convert/1)
-
   def insert(keyspace, table, changes) do
     changes = Enum.to_list(changes)
 
@@ -133,16 +123,16 @@ defmodule Cassandrax.Connection do
     end)
   end
 
-  defp prepare(keyspace, iodata) when is_list(iodata) do
+  def prepare(keyspace, iodata) when is_list(iodata) do
     statement = IO.iodata_to_binary(iodata)
     prepare(keyspace, statement)
   end
 
-  defp prepare(keyspace, query_statement) when is_binary(query_statement) do
+  def prepare(keyspace, query_statement) when is_binary(query_statement) do
     Xandra.Cluster.prepare(keyspace, query_statement)
   end
 
-  defp execute(keyspace, prepared_statement, values, opts) do
+  def execute(keyspace, prepared_statement, values, opts) do
     default_opts = keyspace.__defaults__(:write_consistency)
     opts = default_opts |> Keyword.merge(opts)
 
