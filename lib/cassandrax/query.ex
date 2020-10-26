@@ -5,7 +5,7 @@ defmodule Cassandrax.Query do
   @per_partition_limit_default 100
 
   defstruct schema: nil,
-            select: nil,
+            select: [],
             distinct: [],
             from: nil,
             wheres: [],

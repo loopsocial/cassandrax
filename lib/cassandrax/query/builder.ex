@@ -1,11 +1,19 @@
 defmodule Cassandrax.Query.Builder do
   @moduledoc """
-  Converts a data structure into an `Cassandrax.Query`.
+  Builds query clauses and adds them to a `Cassandrax.Query`
   """
 
   @doc """
-  Converts the given `data` into an `Cassandrax.Query`.
+  Converts the given `data` into a query clause and adds it to the given `Cassandrax.Query`.
   """
+  def build(type, queryable, {:^, _, [var]}) do
+    quote do
+      fragment = Cassandrax.Query.Builder.build_fragment(unquote(type), unquote(var))
+      query = Cassandrax.Queryable.to_query(unquote(queryable))
+      Cassandrax.Query.Builder.add_fragment(unquote(type), fragment, query)
+    end
+  end
+
   def build(type, queryable, value) do
     fragment = build_fragment(type, value)
 
@@ -15,10 +23,24 @@ defmodule Cassandrax.Query.Builder do
     end
   end
 
-  defp build_fragment(:where, {operator, _, [field, value]}), do: [field, operator, value]
-  defp build_fragment(:where, [{field, value}]) when is_list(value), do: [field, :in, value]
-  defp build_fragment(:where, [{field, value}]), do: [field, :==, value]
-  defp build_fragment(_type, value), do: value
+  @allowed_operators [
+    :==,
+    :!=,
+    :>,
+    :<,
+    :>=,
+    :<=,
+    :in,
+    :contains,
+    :contains_key
+  ]
+
+  def build_fragment(:where, {operator, _, [field, value]}) when operator in @allowed_operators,
+    do: [field, operator, value]
+
+  def build_fragment(:where, [{field, value}]) when is_list(value), do: [field, :in, value]
+  def build_fragment(:where, [{field, value}]), do: [field, :==, value]
+  def build_fragment(_type, value), do: value
 
   def add_fragment(:where, filter, query) do
     %{query | wheres: [filter | query.wheres]}
