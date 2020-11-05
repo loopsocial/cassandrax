@@ -1,3 +1,10 @@
+defmodule Cassandrax.ClusterConfigError do
+  @moduledoc """
+  Raised at runtime when a cluster is listed in the env, but no config for it is found
+  """
+  defexception [:message]
+end
+
 defmodule Cassandrax.QueryError do
   @moduledoc """
   Raised at runtime when a query is invalid

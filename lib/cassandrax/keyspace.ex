@@ -1,14 +1,23 @@
 defmodule Cassandrax.Keyspace do
+  @moduledoc """
+  Defines a Keyspace.
+
+  A keyspace acts as a repository, wrapping the underlying keyspace which stores
+  its tables in CassandraDB.
+  """
+
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       @behaviour Cassandrax.Keyspace
-      @otp_app Keyword.fetch!(opts, :otp_app)
+      # @otp_app Keyword.fetch!(opts, :otp_app)
+      @cluster Keyword.fetch!(opts, :cluster)
       @keyspace_name Keyword.fetch!(opts, :name)
-      @default_write_consistency Keyword.get(opts, :default_write_consistency, :one)
-      @default_read_consistency Keyword.get(opts, :default_read_consistency, :one)
+      # @default_write_consistency Keyword.get(opts, :default_write_consistency, :one)
+      # @default_read_consistency Keyword.get(opts, :default_read_consistency, :one)
 
       def config do
-        {:ok, config} = Cassandrax.Keyspace.Supervisor.runtime_config(__MODULE__, @otp_app, [])
+        {:ok, config} =
+          Cassandrax.Keyspace.Supervisor.runtime_config(__MODULE__, @otp_app, @cluster, [])
 
         config
       end
