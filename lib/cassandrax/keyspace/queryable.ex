@@ -64,8 +64,10 @@ defmodule Cassandrax.Keyspace.Queryable do
   Implementation for `Cassandrax.Keyspace.cql/3`
   """
   def cql(keyspace, statement, values, opts) do
-    case Cassandrax.Connection.prepare(keyspace, statement) do
-      {:ok, prepared} -> Cassandrax.Connection.execute(keyspace, prepared, values, opts)
+    conn = keyspace.__conn__
+
+    case Cassandrax.Connection.prepare(conn, statement) do
+      {:ok, prepared} -> Cassandrax.Connection.execute(conn, prepared, values, opts)
       {:error, error} -> {:error, error}
     end
   end

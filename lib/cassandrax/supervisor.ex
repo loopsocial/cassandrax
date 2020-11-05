@@ -5,15 +5,15 @@ defmodule Cassandrax.Supervisor do
 
   @defaults [timeout: 100, pool_size: 50]
 
-  def child_spec(config, cluster_or_keyspace) do
+  def child_spec(cluster_or_keyspace, config) do
     %{
       id: __MODULE__,
-      start: {__MODULE__, :start_link, [config, cluster_or_keyspace]},
+      start: {__MODULE__, :start_link, [cluster_or_keyspace, config]},
       type: :supervisor
     }
   end
 
-  def start_link(config, cluster_or_keyspace) do
+  def start_link(cluster_or_keyspace, config) do
     opts = [name: Module.concat(cluster_or_keyspace, Supervisor)]
     init_args = {cluster_or_keyspace, config}
     Supervisor.start_link(__MODULE__, init_args, opts)
@@ -31,7 +31,7 @@ defmodule Cassandrax.Supervisor do
       |> Keyword.merge(authentication)
       |> Keyword.merge(name: cluster_or_keyspace)
 
-    keyspace_init(cluster_or_keyspace, config)
+    custom_init(cluster_or_keyspace, config)
   end
 
   defp pop_authentication_config(config) do
@@ -58,7 +58,7 @@ defmodule Cassandrax.Supervisor do
 
   # This allows Users to override configs on runtime by defining `c:init/2` callback in the module
   # given to start_link as `name` argument
-  defp keyspace_init(cluster_or_keyspace, config) do
+  defp custom_init(cluster_or_keyspace, config) do
     if Code.ensure_loaded?(cluster_or_keyspace) and
          function_exported?(cluster_or_keyspace, :init, 2) do
       cluster_or_keyspace.init(config)

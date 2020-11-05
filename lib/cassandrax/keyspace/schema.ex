@@ -57,10 +57,13 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.insert/2`.
   """
   def insert(keyspace, %Changeset{} = changeset, opts) do
-    {statement, values, changeset} = setup_insert(keyspace, changeset)
-    {:ok, prepared} = Cassandrax.Connection.prepare(keyspace, statement)
+    conn = keyspace.__conn__
+    opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
-    case Cassandrax.Connection.execute(keyspace, prepared, values, opts) do
+    {statement, values, changeset} = setup_insert(keyspace, changeset)
+    {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
+
+    case Cassandrax.Connection.execute(conn, prepared, values, opts) do
       {:ok, _void_response} -> load_changes(changeset, :loaded)
       {:error, error} -> {:error, error}
     end
@@ -110,10 +113,13 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.update/2`.
   """
   def update(keyspace, %Ecto.Changeset{} = changeset, opts) do
-    {statement, values, changeset} = setup_update(keyspace, changeset)
-    {:ok, prepared} = Cassandrax.Connection.prepare(keyspace, statement)
+    conn = keyspace.__conn__
+    opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
-    case Cassandrax.Connection.execute(keyspace, prepared, values, opts) do
+    {statement, values, changeset} = setup_update(keyspace, changeset)
+    {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
+
+    case Cassandrax.Connection.execute(conn, prepared, values, opts) do
       {:ok, _void_response} -> load_changes(changeset, :loaded)
       {:error, error} -> {:error, error}
     end
@@ -143,10 +149,13 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.delete/2`.
   """
   def delete(keyspace, %Ecto.Changeset{} = changeset, opts) do
-    {statement, values, changeset} = setup_delete(keyspace, changeset)
-    {:ok, prepared} = Cassandrax.Connection.prepare(keyspace, statement)
+    conn = keyspace.__conn__
+    opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
-    case Cassandrax.Connection.execute(keyspace, prepared, values, opts) do
+    {statement, values, changeset} = setup_delete(keyspace, changeset)
+    {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
+
+    case Cassandrax.Connection.execute(conn, prepared, values, opts) do
       {:ok, _void_response} -> load_changes(changeset, :deleted)
       {:error, error} -> {:error, error}
     end

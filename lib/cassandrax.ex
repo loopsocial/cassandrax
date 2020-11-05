@@ -10,9 +10,8 @@ defmodule Cassandrax do
   def start(_type, _args) do
     children =
       for cluster <- Application.get_env(:cassandrax, :clusters, []), into: [] do
-        Application.get_env(:cassandrax, cluster)
-        |> ensure_cluster_config!(cluster)
-        |> Cassandrax.Supervisor.child_spec(cluster)
+        config = Application.get_env(:cassandrax, cluster) |> ensure_cluster_config!(cluster)
+        Cassandrax.Supervisor.child_spec(cluster, config)
       end
 
     opts = [strategy: :one_for_one, name: Cassandrax.Supervisor]

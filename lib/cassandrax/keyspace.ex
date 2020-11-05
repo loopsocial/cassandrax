@@ -9,46 +9,26 @@ defmodule Cassandrax.Keyspace do
   defmacro __using__(opts) do
     quote bind_quoted: [opts: opts] do
       @behaviour Cassandrax.Keyspace
-      # @otp_app Keyword.fetch!(opts, :otp_app)
-      @cluster Keyword.fetch!(opts, :cluster)
+
       @keyspace_name Keyword.fetch!(opts, :name)
-      # @default_write_consistency Keyword.get(opts, :default_write_consistency, :one)
-      # @default_read_consistency Keyword.get(opts, :default_read_consistency, :one)
+      @cluster Keyword.fetch!(opts, :cluster)
+      @cluster_config Application.get_env(:cassandrax, @cluster)
+      @conn_pool Keyword.get(opts, :pool, @cluster)
 
       def config do
-        {:ok, config} =
-          Cassandrax.Keyspace.Supervisor.runtime_config(__MODULE__, @otp_app, @cluster, [])
+        {:ok, config} = Cassandrax.Supervisor.runtime_config(@cluster, @cluster_config)
 
         config
       end
 
-      def child_spec(opts) do
-        %{
-          id: __MODULE__,
-          start: {__MODULE__, :start_link, [opts]},
-          type: :supervisor
-        }
-      end
-
+      def __default_options__(:write), do: __MODULE__.config() |> Keyword.get(:write_options)
+      def __default_options__(:read), do: __MODULE__.config() |> Keyword.get(:read_options)
       def __keyspace__, do: @keyspace_name
+      def __conn__, do: @conn_pool
 
-      def __defaults__(:write_consistency) do
-        write_consistency = __MODULE__.config() |> Keyword.get(:default_write_consistency)
-        [consistency: write_consistency]
-      end
-
-      def __defaults__(:read_consistency) do
-        read_consistency = __MODULE__.config() |> Keyword.get(:default_read_consistency)
-        [consistency: read_consistency]
-      end
-
-      def start_link(opts \\ []) do
-        Cassandrax.Keyspace.Supervisor.start_link(
-          __MODULE__,
-          Module.concat(__MODULE__, Supervisor),
-          @otp_app,
-          opts
-        )
+      ## Keyspace gains its own pool if option `conn_pool` was given
+      if @conn_pool == __MODULE__ do
+        def child_spec(_), do: Cassandrax.Supervisor.child_spec(__MODULE__, config())
       end
 
       ## Schemas
@@ -76,8 +56,9 @@ defmodule Cassandrax.Keyspace do
       def all(queryable, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.all(__MODULE__, queryable, opts)
 
-      def get(queryable, primary_key, opts \\ []),
-        do: Cassandrax.Keyspace.Queryable.get(__MODULE__, queryable, primary_key, opts)
+      def get(queryable, primary_key, opts \\ []) do
+        Cassandrax.Keyspace.Queryable.get(__MODULE__, queryable, primary_key, opts)
+      end
 
       def one(queryable, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.one(__MODULE__, queryable, opts)

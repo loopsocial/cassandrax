@@ -9,11 +9,11 @@ defmodule Cassandrax.Keyspace.Batch do
   def run(keyspace, fun, opts) do
     type = if Keyword.get(opts, :logged, false), do: :logged, else: :unlogged
 
-    Xandra.Cluster.run(keyspace, fn conn ->
+    Xandra.Cluster.run(keyspace.__conn__, fn conn ->
       xandra_batch = Xandra.Batch.new(type)
       batch = %Cassandrax.Keyspace.Batch{conn: conn, xandra_batch: xandra_batch} |> fun.()
 
-      case Cassandrax.Connection.execute(keyspace, batch, opts) do
+      case Cassandrax.Connection.execute(batch, opts) do
         {:ok, %Xandra.Void{}} -> :ok
         {:error, error} -> {:error, error}
       end
