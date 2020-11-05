@@ -5,9 +5,11 @@ defmodule Cassandrax.Keyspace.Queryable do
   require Cassandrax.Query
 
   def all(keyspace, queryable, opts) when is_list(opts) do
+    conn = keyspace.__conn__
+
     {statement, values} = Cassandrax.Connection.all(keyspace, queryable)
 
-    case cql(keyspace, statement, values, opts) do
+    case Cassandrax.cql(conn, statement, values, opts) do
       {:ok, results} -> convert_results(queryable, results)
       {:error, error} -> raise error
     end
@@ -58,18 +60,6 @@ defmodule Cassandrax.Keyspace.Queryable do
     raise ArgumentError,
           "Cassandrax.Keyspace.get/2 requires a Keyword primary_key, " <>
             "got: #{inspect(value)}"
-  end
-
-  @doc """
-  Implementation for `Cassandrax.Keyspace.cql/3`
-  """
-  def cql(keyspace, statement, values, opts) do
-    conn = keyspace.__conn__
-
-    case Cassandrax.Connection.prepare(conn, statement) do
-      {:ok, prepared} -> Cassandrax.Connection.execute(conn, prepared, values, opts)
-      {:error, error} -> {:error, error}
-    end
   end
 
   defp filters_for_partition(true, _partition_keys, filters), do: filters

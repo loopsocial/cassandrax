@@ -63,8 +63,10 @@ defmodule Cassandrax.Keyspace do
       def one(queryable, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.one(__MODULE__, queryable, opts)
 
+      ## Run Plain CQL Statements
+
       def cql(statement, values \\ [], opts \\ []),
-        do: Cassandrax.Keyspace.Queryable.cql(__MODULE__, statement, values, opts)
+        do: Cassandrax.cql(@conn_pool, statement, values, opts)
 
       ## Batch
 

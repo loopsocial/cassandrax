@@ -27,4 +27,11 @@ defmodule Cassandrax do
       )
 
   def ensure_cluster_config!(config, _cluster), do: config
+
+  def cql(conn, statement, values \\ [], opts \\ []) do
+    case Cassandrax.Connection.prepare(conn, statement) do
+      {:ok, prepared} -> Cassandrax.Connection.execute(conn, prepared, values, opts)
+      {:error, error} -> {:error, error}
+    end
+  end
 end
