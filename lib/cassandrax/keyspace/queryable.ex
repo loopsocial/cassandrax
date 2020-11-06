@@ -6,6 +6,7 @@ defmodule Cassandrax.Keyspace.Queryable do
 
   def all(keyspace, queryable, opts) when is_list(opts) do
     conn = keyspace.__conn__
+    queryable = Cassandrax.Queryable.to_query(queryable)
 
     {statement, values} = Cassandrax.Connection.all(keyspace, queryable)
 
