@@ -5,11 +5,6 @@ defmodule Cassandrax.Schema do
   This schema is used to map data fetched from a CassandraDB node into an Elixir struct.
   """
 
-  @doc """
-  This is invoked when a query is being prepared
-  """
-  @callback query_statement(operation :: atom()) :: String.t()
-
   defmacro __using__(_opts) do
     quote do
       # First we import the Schema macroes
