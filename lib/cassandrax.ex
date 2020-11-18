@@ -8,25 +8,26 @@ defmodule Cassandrax do
   use Application
 
   def start(_type, _args) do
-    children =
-      for cluster <- Application.get_env(:cassandrax, :clusters, []), into: [] do
-        config = Application.get_env(:cassandrax, cluster) |> ensure_cluster_config!(cluster)
-        Cassandrax.Supervisor.child_spec(cluster, config)
-      end
-
-    opts = [strategy: :one_for_one, name: Cassandrax.Supervisor]
-    Supervisor.start_link(children, opts)
+    Application.get_env(:cassandrax, :clusters, [])
+    |> Enum.map(fn cluster ->
+      config = Application.get_env(:cassandrax, cluster) |> ensure_cluster_config!(cluster)
+      Cassandrax.Supervisor.child_spec(cluster, config)
+    end)
+    |> start_link()
   end
 
-  def ensure_cluster_config!(empty, cluster) when is_nil(empty) or empty == [],
-    do:
-      raise(
-        Cassandrax.ClusterConfigError,
-        "Expected to find keyword configs for " <>
-          "#{inspect(cluster)}, found #{inspect(empty)}"
-      )
+  def ensure_cluster_config!(empty, cluster) when is_nil(empty) or empty == [] do
+    raise(
+      Cassandrax.ClusterConfigError,
+      "Expected to find keyword configs for #{inspect(cluster)}, found #{inspect(empty)}"
+    )
+  end
 
   def ensure_cluster_config!(config, _cluster), do: config
+
+  def start_link(children) do
+    Supervisor.start_link(children, strategy: :one_for_one, name: Cassandrax.Supervisor)
+  end
 
   def cql(conn, statement, values \\ [], opts \\ []) do
     case Cassandrax.Connection.prepare(conn, statement) do

@@ -11,10 +11,12 @@ defmodule Cassandrax.MixProject do
       app: :cassandrax,
       version: @version,
       elixir: "~> 1.9",
+      elixirc_paths: elixirc_paths(Mix.env()),
       source_url: @url,
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
+      aliases: aliases(),
       description: "An Elixir Cassandra ORM built on top of Xandra driver."
     ]
   end
@@ -43,4 +45,14 @@ defmodule Cassandrax.MixProject do
       files: ~w(lib) ++ ~w(CHANGELOG.md LICENSE mix.exs README.md)
     ]
   end
+
+  defp aliases do
+    [
+      test: "test --no-start"
+    ]
+  end
+
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end
