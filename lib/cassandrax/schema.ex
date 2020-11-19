@@ -12,7 +12,6 @@ defmodule Cassandrax.Schema do
 
       # Use Ecto.Schema to leverage the struct and other helpers
       use Ecto.Schema
-      @behaviour Cassandrax.Schema
 
       # Include the custom types available in CassandraDB, but not mapped by Ecto.Schema
       alias Cassandrax.Schema.MapSetType
