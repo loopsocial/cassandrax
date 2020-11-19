@@ -1,5 +1,5 @@
 defmodule Cassandrax.SchemaTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Cassandrax.Query
 
