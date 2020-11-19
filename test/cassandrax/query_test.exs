@@ -30,13 +30,13 @@ defmodule Cassandrax.QueryTest do
     test "keyword syntax results in equals operator" do
       query = where(TestSchema, id: 123)
 
-      assert %Cassandrax.Query{wheres: [[:id, :==, 123]]}
+      assert %Cassandrax.Query{wheres: [[:id, :==, 123]]} = query
     end
 
     test "operator syntax" do
       query = TestSchema |> where(:id == 123) |> where(:field1 <= "string")
 
-      assert %Cassandrax.Query{wheres: [[:field1, :<=, "string"], [:id, :==, 123]]}
+      assert %Cassandrax.Query{wheres: [[:field1, :<=, "string"], [:id, :==, 123]]} = query
     end
   end
 
