@@ -35,8 +35,8 @@ defmodule Cassandrax.Schema do
 
       @primary_key [partition_keys, clustering_keys]
 
-      def __schema__(:query), do: %Cassandrax.Query{from: unquote(source), schema: __MODULE__}
-      def __schema__(:primary_key), do: @primary_key
+      def __schema__(:queryable), do: %Cassandrax.Query{from: unquote(source), schema: __MODULE__}
+      def __schema__(:pk), do: @primary_key
 
       # Set it to false to bypass Ecto primary_key verification
       @primary_key false

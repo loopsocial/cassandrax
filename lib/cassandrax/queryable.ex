@@ -16,7 +16,7 @@ end
 defimpl Cassandrax.Queryable, for: Atom do
   def to_query(schema) do
     try do
-      schema.__schema__(:query)
+      schema.__schema__(:queryable)
     rescue
       UndefinedFunctionError ->
         description =

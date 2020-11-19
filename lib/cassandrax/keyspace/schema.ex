@@ -131,7 +131,7 @@ defmodule Cassandrax.Keyspace.Schema do
   defp setup_update(keyspace, %Changeset{valid?: true} = changeset) do
     struct = changeset.data
     schema = struct.__struct__
-    primary_key = schema.__schema__(:primary_key) |> List.flatten()
+    primary_key = schema.__schema__(:pk) |> List.flatten()
     table = schema.__schema__(:source)
     keyspace_name = keyspace.__keyspace__
 
@@ -167,7 +167,7 @@ defmodule Cassandrax.Keyspace.Schema do
   defp setup_delete(keyspace, %Changeset{valid?: true} = changeset) do
     struct = changeset.data
     schema = struct.__struct__
-    primary_key = schema.__schema__(:primary_key) |> List.flatten()
+    primary_key = schema.__schema__(:pk) |> List.flatten()
     table = schema.__schema__(:source)
     keyspace_name = keyspace.__keyspace__
 
