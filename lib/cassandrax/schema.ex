@@ -27,8 +27,11 @@ defmodule Cassandrax.Schema do
     quote do
       pk = @primary_key
 
-      if !pk or pk == [],
-        do: raise("You must define a @primary_key before the schema definition")
+      if !pk or pk == [] do
+        raise(Cassandrax.SchemaError,
+          message: "You must define a @primary_key before the schema definition"
+        )
+      end
 
       [partition_keys | clustering_keys] = pk
       partition_keys = List.flatten([partition_keys])
@@ -49,24 +52,27 @@ defmodule Cassandrax.Schema do
 
       for partition_key <- partition_keys do
         if partition_key not in schema_fields do
-          raise ArgumentError,
-                "@primary_key defines a partition key that wasn't defined in the schema: #{
-                  inspect(partition_key)
-                }"
+          raise Cassandrax.SchemaError,
+            message:
+              "@primary_key defines a partition key that wasn't defined in the schema: #{
+                inspect(partition_key)
+              }"
         end
 
         Module.put_attribute(__MODULE__, :partition_key, partition_key)
       end
 
-      if !@partition_key or @partition_key == [],
-        do: raise("@primary_key cannot define an empty, nil or false partition_key")
+      if @partition_key == [] do
+        raise(Cassandrax.SchemaError, message: "@primary_key cannot define an empty partition_key")
+      end
 
       for clustering_key <- clustering_keys do
         if clustering_key not in schema_fields do
-          raise ArgumentError,
-                "@primary_key defines a clustering key that wasn't defined in the schema: #{
-                  inspect(clustering_key)
-                }"
+          raise Cassandrax.SchemaError,
+            message:
+              "@primary_key defines a clustering key that wasn't defined in the schema: #{
+                inspect(clustering_key)
+              }"
         end
       end
 
