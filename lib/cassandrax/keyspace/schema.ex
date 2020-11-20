@@ -16,6 +16,9 @@ defmodule Cassandrax.Keyspace.Schema do
       {:error, %Changeset{} = changeset} ->
         raise Ecto.InvalidChangesetError, action: :insert, changeset: changeset
 
+      {:error, :invalid_data} ->
+        raise Cassandrax.InvalidDataError, data: struct
+
       {:error, xandra_error} ->
         raise xandra_error
     end
@@ -63,9 +66,13 @@ defmodule Cassandrax.Keyspace.Schema do
     {statement, values, changeset} = setup_insert(keyspace, changeset)
     {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
 
-    case Cassandrax.Connection.execute(conn, prepared, values, opts) do
-      {:ok, _void_response} -> load_changes(changeset, :loaded)
-      {:error, error} -> {:error, error}
+    try do
+      case Cassandrax.Connection.execute(conn, prepared, values, opts) do
+        {:ok, _void_response} -> load_changes(changeset, :loaded)
+        {:error, error} -> {:error, error}
+      end
+    rescue
+      _ in FunctionClauseError -> {:error, :invalid_data}
     end
   end
 

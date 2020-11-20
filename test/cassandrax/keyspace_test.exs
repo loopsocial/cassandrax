@@ -112,12 +112,10 @@ defmodule Cassandrax.KeyspaceTest do
       assert schema_equal(TestKeyspace.insert!(@one), @one)
     end
 
-    @tag :pending
     test "insert invalid data" do
       assert {:error, :invalid_data} == TestKeyspace.insert(@invalid_one)
     end
 
-    @tag :pending
     test "insert! invalid data" do
       try do
         TestKeyspace.insert!(@invalid_one)

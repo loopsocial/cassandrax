@@ -37,3 +37,20 @@ defmodule Cassandrax.SchemaError do
   """
   defexception [:message]
 end
+
+defmodule Cassandrax.InvalidDataError do
+  @moduledoc """
+  Raised at compile time when a schema is invalid
+  """
+  defexception [:message, :data]
+
+  def exception(opts) do
+    data = Keyword.fetch!(opts, :data)
+
+    msg = """
+    failed to write data to the database due to invalid format: #{inspect(data)}
+    """
+
+    %__MODULE__{message: msg, data: data}
+  end
+end
