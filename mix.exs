@@ -25,7 +25,9 @@ defmodule Cassandrax.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Cassandrax, []}
+      mod: {Cassandrax, []},
+      # for tests
+      # env: [cassandrax: [cluster: [username: "cassandra", password: "cassandra"]]]
     ]
   end
 

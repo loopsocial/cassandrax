@@ -15,22 +15,23 @@ defmodule Cassandrax.DataCase do
       end
 
       defp start_test_connection do
-        child = Cassandrax.Supervisor.child_spec(Cassandrax.TestConn, nodes: ["127.0.0.1:9043"])
+        child = Cassandrax.Supervisor.child_spec(Cassandrax.TestConn,
+          nodes: ["127.0.0.1:9042"], username: "cassandra", password: "cassandra")
         Cassandrax.start_link([child])
         await_connected(TestConn, "USE system")
       end
 
       # We need to wait for the connection to start executing statements
-      defp await_connected(cluster, statement, tries \\ 4)
+      defp await_connected(cluster, statement, tries \\ 4, last_error \\ nil)
 
-      defp await_connected(_cluster, _statement, 0),
-        do: raise("exceeded maximum number of attempts")
+      defp await_connected(_cluster, _statement, 0, last_error),
+        do: raise("timed out waiting for connection to cassandra; connection error: #{inspect last_error}")
 
-      defp await_connected(cluster, statement, tries) do
+      defp await_connected(cluster, statement, tries, _) do
         Process.sleep(50)
 
         case Cassandrax.cql(cluster, statement) do
-          {:error, %Xandra.ConnectionError{}} -> await_connected(cluster, statement, tries - 1)
+          {:error, %Xandra.ConnectionError{} = error} -> await_connected(cluster, statement, tries - 1, error)
           response -> response
         end
       end
