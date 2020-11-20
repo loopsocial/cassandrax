@@ -30,3 +30,10 @@ defmodule Cassandrax.MultipleResultsError do
     %__MODULE__{message: msg}
   end
 end
+
+defmodule Cassandrax.SchemaError do
+  @moduledoc """
+  Raised at compile time when a schema is invalid
+  """
+  defexception [:message]
+end
