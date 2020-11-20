@@ -62,7 +62,6 @@ defmodule Cassandrax.KeyspaceTest do
     :ok
   end
 
-  # TODO: override Kernel.== or use https://github.com/coingaming/comparable
   defp schema_equal({:ok, a}, {:ok, b}), do: schema_equal(a, b)
   defp schema_equal(a, b) do
     Map.delete(a, :__meta__) == Map.delete(b, :__meta__)
@@ -83,6 +82,24 @@ defmodule Cassandrax.KeyspaceTest do
   @four %TestData{id: "4", value: "four"}
   # invalid because 1 is an integer
   @invalid_one %TestData{id: "1", value: 1}
+
+  describe "module functions" do
+    test "default option read: :one" do
+      assert TestKeyspace.__default_options__(:write) == [consistency: :one]
+    end
+
+    test "default option write: :one" do
+      assert TestKeyspace.__default_options__(:write) == [consistency: :one]
+    end
+
+    test "keyspace" do
+      assert TestKeyspace.__keyspace__() == "test_keyspace"
+    end
+
+    test "connection" do
+      assert TestKeyspace.__conn__() == Cassandrax.TestConn
+    end
+  end
 
   describe "changeset operations" do
     @describetag seeds: [@zero]
@@ -110,15 +127,15 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "update" do
-      changeset = Changeset.change(@zero, value: "ZERO")
-      expectation = %{@zero | value: "ZERO"}
+      changeset = Changeset.change(@zero, value: "new zero")
+      expectation = %{@zero | value: "new zero"}
       assert schema_equal(TestKeyspace.update(changeset), {:ok, expectation})
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
 
     test "update!" do
-      changeset = Changeset.change(@zero, value: "ZERO")
-      expectation = %{@zero | value: "ZERO"}
+      changeset = Changeset.change(@zero, value: "new zero")
+      expectation = %{@zero | value: "new zero"}
       assert schema_equal(TestKeyspace.update!(changeset), expectation)
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
@@ -172,7 +189,6 @@ defmodule Cassandrax.KeyspaceTest do
     end
   end
 
-  #TODO: test batch options [:logged, :unlogged]
   describe "batch operations" do
     @describetag seeds: [@zero, @one]
 
@@ -249,7 +265,7 @@ defmodule Cassandrax.KeyspaceTest do
       changeset1 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
       changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "last one")
       changeset3 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "one last one")
-      expectation = ["new one", "last one", "one last one"] #%{@one | value: "one last one"}
+      expectation = ["new one", "last one", "one last one"]
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_update(changeset1)
