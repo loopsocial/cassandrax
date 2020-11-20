@@ -6,8 +6,6 @@ defmodule Cassandrax.DataCase do
   alias Cassandrax.TestConn
 
   using do
-    import Cassandrax.Query
-
     quote do
       setup_all do
         start_test_connection()
