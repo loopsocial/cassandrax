@@ -82,6 +82,7 @@ defmodule Cassandrax.KeyspaceTest do
   @four %TestData{id: "4", value: "four"}
   # invalid because 1 is an integer
   @invalid_one %TestData{id: "1", value: 1}
+  @invalid_id %TestData{id: 1, value: 1}
 
   describe "module functions" do
     test "default option read: :one" do
@@ -117,35 +118,55 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "insert! invalid data" do
-      try do
+      assert_raise(Cassandrax.InvalidDataError, fn ->
         TestKeyspace.insert!(@invalid_one)
-      rescue
-        _ in Cassandrax.InvalidDataError -> nil #made up error
-      end
+      end)
     end
 
-    test "update" do
+    test "update valid data" do
       changeset = Changeset.change(@zero, value: "new zero")
       expectation = %{@zero | value: "new zero"}
       assert schema_equal(TestKeyspace.update(changeset), {:ok, expectation})
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
 
-    test "update!" do
+    test "update! valid data" do
       changeset = Changeset.change(@zero, value: "new zero")
       expectation = %{@zero | value: "new zero"}
       assert schema_equal(TestKeyspace.update!(changeset), expectation)
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
 
-    test "delete" do
+    test "update invalid data" do
+      changeset = Changeset.change(@zero, value: 1)
+      assert  {:error, :invalid_data} == TestKeyspace.update(changeset)
+    end
+
+    test "update! invalid data" do
+      changeset = Changeset.change(@zero, value: 1)
+      assert_raise(Cassandrax.InvalidDataError, fn ->
+        TestKeyspace.update!(changeset)
+      end)
+    end
+
+    test "delete valid data" do
       assert schema_equal(TestKeyspace.delete(@zero), {:ok, @zero})
       assert TestKeyspace.get(TestData, id: "0") == nil
     end
 
-    test "delete!" do
+    test "delete! valid data" do
       assert schema_equal(TestKeyspace.delete!(@zero), @zero)
       assert TestKeyspace.get(TestData, id: "0") == nil
+    end
+
+    test "delete invalid id" do
+      assert {:error, :invalid_data} == TestKeyspace.delete(@invalid_id)
+    end
+
+    test "delete! invalid id" do
+      assert_raise(Cassandrax.InvalidDataError, fn ->
+        TestKeyspace.delete!(@invalid_id)
+      end)
     end
   end
 
@@ -258,7 +279,6 @@ defmodule Cassandrax.KeyspaceTest do
     Cassandra applies all rows using the same timestamp. Use client-supplied timestamps to achieve a particular order.
     https://docs.datastax.com/en/archived/cql/3.1/cql/cql_reference/batch_r.html
     """
-    # @tag :pending
     test "update scalar data of the same records" do
       changeset1 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
       changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "last one")
