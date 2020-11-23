@@ -1,3 +1,5 @@
+Code.require_file("../support/data_case.exs", __DIR__)
+
 defmodule Cassandrax.ConnectionTest do
   use Cassandrax.DataCase
 
