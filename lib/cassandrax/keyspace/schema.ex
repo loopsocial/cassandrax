@@ -63,9 +63,13 @@ defmodule Cassandrax.Keyspace.Schema do
     {statement, values, changeset} = setup_insert(keyspace, changeset)
     {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
 
-    case Cassandrax.Connection.execute(conn, prepared, values, opts) do
-      {:ok, _void_response} -> load_changes(changeset, :loaded)
-      {:error, error} -> {:error, error}
+    try do
+      case Cassandrax.Connection.execute(conn, prepared, values, opts) do
+        {:ok, _void_response} -> load_changes(changeset, :loaded)
+        {:error, error} -> {:error, error}
+      end
+    rescue
+      error in FunctionClauseError -> {:error, error}
     end
   end
 
@@ -119,9 +123,13 @@ defmodule Cassandrax.Keyspace.Schema do
     {statement, values, changeset} = setup_update(keyspace, changeset)
     {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
 
-    case Cassandrax.Connection.execute(conn, prepared, values, opts) do
-      {:ok, _void_response} -> load_changes(changeset, :loaded)
-      {:error, error} -> {:error, error}
+    try do
+      case Cassandrax.Connection.execute(conn, prepared, values, opts) do
+        {:ok, _void_response} -> load_changes(changeset, :loaded)
+        {:error, error} -> {:error, error}
+      end
+    rescue
+      error in FunctionClauseError -> {:error, error}
     end
   end
 
@@ -155,9 +163,13 @@ defmodule Cassandrax.Keyspace.Schema do
     {statement, values, changeset} = setup_delete(keyspace, changeset)
     {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
 
-    case Cassandrax.Connection.execute(conn, prepared, values, opts) do
-      {:ok, _void_response} -> load_changes(changeset, :deleted)
-      {:error, error} -> {:error, error}
+    try do
+      case Cassandrax.Connection.execute(conn, prepared, values, opts) do
+        {:ok, _void_response} -> load_changes(changeset, :deleted)
+        {:error, error} -> {:error, error}
+      end
+    rescue
+      error in FunctionClauseError -> {:error, error}
     end
   end
 
