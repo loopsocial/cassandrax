@@ -19,6 +19,7 @@ defmodule Cassandrax.ConnectionTest do
     table "my_table" do
       field(:id, :string)
       field(:order_id, :integer)
+      field(:field, :string)
       field(:set, MapSetType)
       field(:list, {:array, :string})
       field(:map, :map)
@@ -42,22 +43,67 @@ defmodule Cassandrax.ConnectionTest do
   describe "all/2" do
     import Cassandrax.Query
 
+    defp all(queryable), do: Cassandrax.Connection.all(TestKeyspace, queryable) |> to_string()
+
     test "defined fields to be selected" do
       queryable = TestSchema |> select([:id, :order_id, :map])
-      statement = Cassandrax.Connection.all(TestKeyspace, queryable) |> to_string()
-      assert statement =~ ~r/SELECT "id", "order_id", "map" FROM "test_keyspace"."my_table"/
-    end
-
-    test "defined where clauses" do
-      queryable = TestSchema |> where(:id == "abc123") |> where(:order_id < 100)
-      statement = Cassandrax.Connection.all(TestKeyspace, queryable) |> to_string()
-      assert statement =~ ~r/WHERE \("order_id" < \?\) AND \("id" = \?\)/
+      assert all(queryable) =~ ~r/SELECT "id", "order_id", "map" FROM "test_keyspace"."my_table"/
     end
 
     test "defined distinct fields" do
       queryable = TestSchema |> distinct([:id, :order_id])
-      statement = Cassandrax.Connection.all(TestKeyspace, queryable) |> to_string()
-      assert statement =~ ~r/SELECT DISTINCT\("id", "order_id"\)/
+      assert all(queryable) =~ ~r/SELECT DISTINCT\("id", "order_id"\)/
+    end
+
+    test "defined group by clause" do
+      queryable = TestSchema |> group_by([:order_id, :field])
+      assert all(queryable) =~ ~r/GROUP BY \("order_id", "field"\)/
+    end
+
+    test "defined order by clause" do
+      queryable = TestSchema |> order_by([:order_id])
+      assert all(queryable) =~ ~r/ORDER BY \("order_id"\)/
+    end
+
+    test "defined per partition limit clause" do
+      queryable = TestSchema |> per_partition_limit(25)
+      assert all(queryable) =~ ~r/PER PARTITION LIMIT \?/
+    end
+
+    test "defined limit clause" do
+      queryable = TestSchema |> limit(25)
+      assert all(queryable) =~ ~r/LIMIT \?/
+    end
+
+    test "defined allow filtering clause" do
+      queryable = TestSchema |> allow_filtering()
+      assert all(queryable) =~ ~r/ALLOW FILTERING/
+    end
+
+    test "defined multiple where clauses" do
+      queryable =
+        TestSchema |> where(:id == "abc123") |> where(:order_id > 100) |> where(:order_id < 350)
+
+      assert all(queryable) =~
+               ~r/WHERE \("order_id" < \?\) AND \("order_id" > \?\) AND \("id" = \?\)/
+    end
+
+    test "defined keyword where clause" do
+      queryable = TestSchema |> where(id: "abc123")
+
+      assert all(queryable) =~ ~r/WHERE \("id" = \?\)/
+    end
+
+    test "defined keyword where clause with list as value" do
+      queryable = TestSchema |> where(id: ["abc123", "def456"])
+
+      assert all(queryable) =~ ~r/WHERE \("id" IN \?\)/
+    end
+
+    @tag :pending
+    test "defined where clause with contains operators" do
+      # queryable = TestSchema |> where(:list contains "abc123") |> where(:map contains_key "def456")
+      # assert all(queryable) =~ ~r/WHERE \("map" CONTAINS KEY \?\) AND \("list" CONTAINS \?\)/
     end
   end
 end
