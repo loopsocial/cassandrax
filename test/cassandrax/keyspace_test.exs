@@ -86,7 +86,7 @@ defmodule Cassandrax.KeyspaceTest do
 
   describe "module functions" do
     test "default option read: :one" do
-      assert TestKeyspace.__default_options__(:write) == [consistency: :one]
+      assert TestKeyspace.__default_options__(:read) == [consistency: :one]
     end
 
     test "default option write: :one" do
@@ -114,13 +114,11 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "insert invalid data" do
-      assert {:error, :invalid_data} == TestKeyspace.insert(@invalid_one)
+      assert {:error, %FunctionClauseError{}} = TestKeyspace.insert(@invalid_one)
     end
 
     test "insert! invalid data" do
-      assert_raise(Cassandrax.InvalidDataError, fn ->
-        TestKeyspace.insert!(@invalid_one)
-      end)
+      assert_raise(FunctionClauseError, fn -> TestKeyspace.insert!(@invalid_one) end)
     end
 
     test "update valid data" do
@@ -139,14 +137,12 @@ defmodule Cassandrax.KeyspaceTest do
 
     test "update invalid data" do
       changeset = Changeset.change(@zero, value: 1)
-      assert  {:error, :invalid_data} == TestKeyspace.update(changeset)
+      assert  {:error, %FunctionClauseError{}} = TestKeyspace.update(changeset)
     end
 
     test "update! invalid data" do
       changeset = Changeset.change(@zero, value: 1)
-      assert_raise(Cassandrax.InvalidDataError, fn ->
-        TestKeyspace.update!(changeset)
-      end)
+      assert_raise(FunctionClauseError, fn -> TestKeyspace.update!(changeset) end)
     end
 
     test "delete valid data" do
@@ -160,12 +156,11 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "delete invalid id" do
-      assert {:error, :invalid_data} == TestKeyspace.delete(@invalid_id)
+      assert {:error, %FunctionClauseError{}} = TestKeyspace.delete(@invalid_id)
     end
 
     test "delete! invalid id" do
-      assert_raise(Cassandrax.InvalidDataError, fn ->
-        TestKeyspace.delete!(@invalid_id)
+      assert_raise(FunctionClauseError, fn -> TestKeyspace.delete!(@invalid_id)
       end)
     end
   end
@@ -198,13 +193,9 @@ defmodule Cassandrax.KeyspaceTest do
       TestKeyspace.insert!(@zero)
       TestKeyspace.insert!(@one)
 
-      assert TestKeyspace.one(where(TestData, id: "0")) == @zero
-      assert TestKeyspace.one(where(TestData, id: "1")) == @one
-      try do
-        TestKeyspace.one(TestData)
-      rescue
-        _ in Cassandrax.MultipleResultsError -> nil
-      end
+      assert TestData |> where(id: "0") |> TestKeyspace.one() == @zero
+      assert TestData |> where(id: "1") |> TestKeyspace.one() == @one
+      assert_raise(Cassandrax.MultipleResultsError, fn -> TestKeyspace.one(TestData) end)
     end
   end
 
@@ -224,17 +215,15 @@ defmodule Cassandrax.KeyspaceTest do
       assert TestKeyspace.get(TestData, id: "2") == @two
     end
 
-    @doc """
-    In Cassandra, INSERT inserts an entire row or upserts data into an existing row
-    https://docs.datastax.com/en/archived/ddaccql/doc/cql/cql_reference/cql_commands/cqlInsert.html
-    """
     test "duplicate key insert" do
       expectation = %{@two | value: "new two"}
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_insert(expectation)
       end)
-      assert TestKeyspace.one(where(TestData, id: "2")) == expectation
+
+      result = TestData |> where(id: "2") |> TestKeyspace.one()
+      assert result == expectation
     end
 
     test "multiple inserts" do
@@ -256,7 +245,8 @@ defmodule Cassandrax.KeyspaceTest do
         |> TestKeyspace.batch_update(changeset)
       end)
 
-      assert TestKeyspace.one(where(TestData, id: "0")) == expectation
+      result = TestData |> where(id: "0") |> TestKeyspace.one()
+      assert result == expectation
     end
 
     test "multiple updates" do
@@ -274,11 +264,6 @@ defmodule Cassandrax.KeyspaceTest do
       assert list_set_includes?(TestKeyspace.all(TestData), [expectation1, expectation2])
     end
 
-    @doc """
-    Statement order does not matter within a batch;
-    Cassandra applies all rows using the same timestamp. Use client-supplied timestamps to achieve a particular order.
-    https://docs.datastax.com/en/archived/cql/3.1/cql/cql_reference/batch_r.html
-    """
     test "update scalar data of the same records" do
       changeset1 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
       changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "last one")
@@ -290,19 +275,21 @@ defmodule Cassandrax.KeyspaceTest do
         |> TestKeyspace.batch_update(changeset2)
         |> TestKeyspace.batch_update(changeset3)
       end)
-      assert TestKeyspace.one(where(TestData, id: "1")).value in expectation
+      result = TestData |> where(id: "1") |> TestKeyspace.one()
+      assert result.value in expectation
     end
 
     test "update set data of the same records" do
       changeset1 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(svalue: MapSet.new(["hello world"]))
       changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(svalue: MapSet.new(["pandemic world"]))
-      expectation2 = %{@one | svalue: MapSet.new(["hello world", "pandemic world"])}
+      expectation = %{@one | svalue: MapSet.new(["hello world", "pandemic world"])}
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_update(changeset1)
         |> TestKeyspace.batch_update(changeset2)
       end)
-      assert TestKeyspace.one(where(TestData, id: "1")) == expectation2
+      result = TestData |> where(id: "1") |> TestKeyspace.one()
+      assert result == expectation
     end
 
     test "single delete" do
@@ -312,7 +299,8 @@ defmodule Cassandrax.KeyspaceTest do
         |> TestKeyspace.batch_delete(data)
       end)
 
-      assert TestKeyspace.one(where(TestData, id: "0")) == nil
+      result = TestData |> where(id: "0") |> TestKeyspace.one()
+      assert result == nil
     end
 
     test "multiple deletes" do
@@ -346,7 +334,8 @@ defmodule Cassandrax.KeyspaceTest do
         |> TestKeyspace.batch_update(changeset)
       end)
 
-      assert TestKeyspace.one(where(TestData, id: "1")) in expectation
+      result = TestData |> where(id: "1") |> TestKeyspace.one()
+      assert result in expectation
     end
    end
 
@@ -364,7 +353,9 @@ defmodule Cassandrax.KeyspaceTest do
         "#{TestKeyspace.__keyspace__()}.test_data ",
         "WHERE id = '1'"
       ]
-      assert {:ok, _} = Cassandrax.cql(TestConn, statement)
+
+      {:ok, page} = Cassandrax.cql(TestConn, statement)
+      assert [%{"value" => "one"}] = Enum.to_list(page)
     end
 
     test "invalid cql" do

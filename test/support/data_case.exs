@@ -15,10 +15,9 @@ defmodule Cassandrax.DataCase do
       end
 
       defp start_test_connection do
-        child = Cassandrax.Supervisor.child_spec(Cassandrax.TestConn,
-          nodes: ["127.0.0.1:9042"], username: "cassandra", password: "cassandra")
+        child = Cassandrax.Supervisor.child_spec(Cassandrax.TestConn, Application.get_env(:cassandrax, Cassandrax.TestConn))
         Cassandrax.start_link([child])
-        await_connected(TestConn, "USE system")
+        await_connected(Cassandrax.TestConn, "USE system")
       end
 
       # We need to wait for the connection to start executing statements

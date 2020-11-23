@@ -16,9 +16,6 @@ defmodule Cassandrax.Keyspace.Schema do
       {:error, %Changeset{} = changeset} ->
         raise Ecto.InvalidChangesetError, action: :insert, changeset: changeset
 
-      {:error, :invalid_data} ->
-        raise Cassandrax.InvalidDataError, data: struct
-
       {:error, xandra_error} ->
         raise xandra_error
     end
@@ -35,9 +32,6 @@ defmodule Cassandrax.Keyspace.Schema do
       {:error, %Changeset{} = changeset} ->
         raise Ecto.InvalidChangesetError, action: :update, changeset: changeset
 
-      {:error, :invalid_data} ->
-        raise Cassandrax.InvalidDataError, data: struct
-
       {:error, xandra_error} ->
         raise xandra_error
     end
@@ -53,9 +47,6 @@ defmodule Cassandrax.Keyspace.Schema do
 
       {:error, %Changeset{} = changeset} ->
         raise Ecto.InvalidChangesetError, action: :delete, changeset: changeset
-
-      {:error, :invalid_data} ->
-        raise Cassandrax.InvalidDataError, data: struct
 
       {:error, xandra_error} ->
         raise xandra_error
@@ -78,7 +69,7 @@ defmodule Cassandrax.Keyspace.Schema do
         {:error, error} -> {:error, error}
       end
     rescue
-      _ in FunctionClauseError -> {:error, :invalid_data}
+      error in FunctionClauseError -> {:error, error}
     end
   end
 
@@ -138,7 +129,7 @@ defmodule Cassandrax.Keyspace.Schema do
         {:error, error} -> {:error, error}
       end
     rescue
-      _ in FunctionClauseError -> {:error, :invalid_data}
+      error in FunctionClauseError -> {:error, error}
     end
   end
 
@@ -178,7 +169,7 @@ defmodule Cassandrax.Keyspace.Schema do
         {:error, error} -> {:error, error}
       end
     rescue
-      _ in FunctionClauseError -> {:error, :invalid_data}
+      error in FunctionClauseError -> {:error, error}
     end
   end
 
