@@ -23,6 +23,7 @@ defmodule Cassandrax.Query.Builder do
     end
   end
 
+  # TODO fix DSL so contains and contains_key work without having to define a custom where function
   @allowed_operators [
     :==,
     :!=,
@@ -30,9 +31,9 @@ defmodule Cassandrax.Query.Builder do
     :<,
     :>=,
     :<=,
-    :in,
-    :contains,
-    :contains_key
+    :in
+    # :contains,
+    # :contains_key
   ]
 
   def build_fragment(:where, {operator, _, [field, value]}) when operator in @allowed_operators,

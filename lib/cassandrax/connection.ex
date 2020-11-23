@@ -34,7 +34,7 @@ defmodule Cassandrax.Connection do
     do: ["SELECT ", intersperse_map(fields, ", ", &quote_name(&1))]
 
   defp select(%{distinct: fields}) when is_list(fields),
-    do: ["SELECT DISTINCT(", intersperse_map(fields, ", ", &quote_name(&1))]
+    do: ["SELECT DISTINCT(", intersperse_map(fields, ", ", &quote_name(&1)), ?)]
 
   defp from(%{from: table}, keyspace), do: [" FROM ", quote_table(keyspace, table)]
 
