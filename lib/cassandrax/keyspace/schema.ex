@@ -73,11 +73,6 @@ defmodule Cassandrax.Keyspace.Schema do
   def insert(keyspace, %{__struct__: _} = struct, opts),
     do: insert(keyspace, Ecto.Changeset.change(struct), opts)
 
-  """
-  Ecto uses dump function in Type module to check if the given data serializes to the database fields' types.
-  We are also using the dump function, but not returning the dumped values so that Xandra can serialize the values.
-  We are only using dump to type check and return an error if the given data is invalid.
-  """
   defp type_check(_, []), do: {:ok, []}
   defp type_check(schema, [{field, value}|remaining_changes]) do
     type = schema.__schema__(:type, field)
