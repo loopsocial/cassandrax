@@ -61,8 +61,7 @@ defmodule Cassandrax.Keyspace.Schema do
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
     with {:ok, {statement, values, changeset}} <- setup_insert(keyspace, changeset),
-         {:ok, prepared} <- Cassandrax.Connection.prepare(conn, statement)
-    do
+         {:ok, prepared} <- Cassandrax.Connection.prepare(conn, statement) do
       case Cassandrax.Connection.execute(conn, prepared, values, opts) do
         {:ok, _void_response} -> load_changes(changeset, :loaded)
         {:error, error} -> {:error, error}
@@ -72,20 +71,6 @@ defmodule Cassandrax.Keyspace.Schema do
 
   def insert(keyspace, %{__struct__: _} = struct, opts),
     do: insert(keyspace, Ecto.Changeset.change(struct), opts)
-
-  defp type_check(_, []), do: {:ok, []}
-  defp type_check(schema, [{field, value}|remaining_changes]) do
-    type = schema.__schema__(:type, field)
-    case Ecto.Type.dump(type, value) do
-      {:ok, _dumped_value} ->
-        with {:ok, rest} <- type_check(schema, remaining_changes),
-             do: {:ok, [value|rest]}
-      :error ->
-        {:error, %Ecto.ChangeError{
-          message: "value `#{inspect(value)}` for `#{inspect(schema)}`.`#{field}` does not match type #{type}"
-        }}
-    end
-  end
 
   defp setup_insert(keyspace, %Changeset{valid?: true} = changeset) do
     struct = changeset.data
@@ -97,8 +82,10 @@ defmodule Cassandrax.Keyspace.Schema do
     changeset = apply_defaults(changeset, struct, fields)
     statement = Cassandrax.Connection.insert(keyspace_name, table, changeset.changes)
 
-    with {:ok, values} <- type_check(schema, Map.to_list(changeset.changes)),
-         do: {:ok, {statement, values, changeset}}
+    case type_check(schema, Map.to_list(changeset.changes)) do
+      {:ok, values} -> {:ok, {statement, values, changeset}}
+      other -> other
+    end
   end
 
   defp setup_insert(_keyspace, %Changeset{valid?: false} = changeset),
@@ -192,8 +179,10 @@ defmodule Cassandrax.Keyspace.Schema do
     statement = Cassandrax.Connection.delete(keyspace_name, table, primary_key)
     primary_key_fields = Enum.map(primary_key, fn field -> {field, Map.get(struct, field)} end)
 
-    with {:ok, values} <- type_check(schema, primary_key_fields),
-      do: {:ok, {statement, values, changeset}}
+    case type_check(schema, primary_key_fields) do
+      {:ok, values} -> {:ok, {statement, values, changeset}}
+      other -> other
+    end
   end
 
   defp setup_delete(_keyspace, %Changeset{valid?: false} = changeset),
@@ -248,4 +237,25 @@ defmodule Cassandrax.Keyspace.Schema do
 
   defp update_metadata(%{__meta__: meta} = struct, state),
     do: %{struct | __meta__: %{meta | state: state}}
+
+  defp type_check(_, []), do: {:ok, []}
+  defp type_check(schema, [{field, value} | remaining_changes]) do
+    type = schema.__schema__(:type, field)
+
+    case Ecto.Type.dump(type, value) do
+      {:ok, _dumped_value} ->
+        case type_check(schema, remaining_changes) do
+          {:ok, rest} -> {:ok, [value | rest]}
+          other -> other
+        end
+      :error ->
+        {:error,
+         %Ecto.ChangeError{
+           message:
+             "value `#{inspect(value)}` for `#{inspect(schema)}`.`#{field}` does not match type #{
+               type
+             }"
+         }}
+    end
+  end
 end
