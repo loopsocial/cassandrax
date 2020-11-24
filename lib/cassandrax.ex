@@ -1,7 +1,7 @@
 defmodule Cassandrax do
   @moduledoc """
-  Cassandrax is a [Triton](https://github.com/blitzstudios/triton) and
-  [Ecto](https://github.com/elixir-ecto/ecto) inspired ORM and query runner.
+  Cassandrax is a Cassandra ORM built on top of [Xandra](https://github.com/lexhide/xandra) library and
+  [Ecto](https://github.com/elixir-ecto/ecto) data mapping.
 
   It allows you to build and run CQL statements as well as map results to Elixir structs.
   """

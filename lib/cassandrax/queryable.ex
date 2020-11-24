@@ -1,6 +1,22 @@
 defprotocol Cassandrax.Queryable do
   @moduledoc """
   Converts a data structure into an `Cassandrax.Query`.
+
+  ##Example
+
+    ```
+    defmodule User do
+      use Cassandrax.Schema
+
+      @primary_key [:id]
+
+      table "users" do
+        field :id, :integer
+      end
+    end
+
+    %Cassandrax.Query{from: "users", schema: User} = Cassandrax.Queryable.to_query(User)
+    ```
   """
 
   @doc """

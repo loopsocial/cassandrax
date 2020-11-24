@@ -1,4 +1,9 @@
 defmodule Cassandrax.Query do
+  @moduledoc """
+    Provides the query macros.
+
+    Queries are used to retrieve or manipulate data from a repository (see Cassandrax.Keyspace).
+  """
   alias Cassandrax.Query.Builder
 
   @limit_default 100

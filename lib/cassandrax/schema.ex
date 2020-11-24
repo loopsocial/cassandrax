@@ -3,8 +3,16 @@ defmodule Cassandrax.Schema do
   Defines a schema.
 
   This schema is used to map data fetched from a CassandraDB node into an Elixir struct.
+
+  `Cassandrax.Schema` mixin uses `Ecto.Schema` mixin.
   """
 
+  @doc """
+  Converts a map of data into a struct for this module.
+  """
+  @callback convert(data :: map | nil) :: struct | nil
+
+  @doc false
   defmacro __using__(_opts) do
     quote do
       # First we import the Schema macroes
@@ -22,6 +30,32 @@ defmodule Cassandrax.Schema do
 
   @doc """
   Defines an embedded schema for the Cassandra table with the given field definitions.
+
+  In order to create a schema, you must define a `@primary_key` before the schema definition.
+  Unlike `Ecto.Schema`, `Cassandrax.Schema` won't automatically generate a primary key which is named `id`.
+  `@primary_key` configures the schema primary key and it expects a list of key(s).
+  You can set a single primary key which is the partition key in Cassandra or a list of keys
+  where the first key is the partition key and the rest are the clustering keys which are responsible
+  for sorting data within the partition.
+
+  You can use Ecto's schema to leverage field definitions and metadata.
+
+  ## Example
+
+    ```
+    defmodule User do
+      use Cassandrax.Schema
+
+      @primary_key [:id]
+
+      table "users" do
+        field :id, :integer
+        field :value, :string
+        field :svalue, MapSetType
+      end
+    end
+    ```
+
   """
   defmacro table(source, do: block) do
     quote do
@@ -77,7 +111,6 @@ defmodule Cassandrax.Schema do
       end
 
       def convert(nil), do: nil
-
       def convert(data) when is_map(data) do
         sanitized_map =
           apply(__MODULE__, :__schema__, [:fields])
