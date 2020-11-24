@@ -60,21 +60,44 @@ defmodule Cassandrax.Keyspace.Schema do
     conn = keyspace.__conn__
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
-    {statement, values, changeset} = setup_insert(keyspace, changeset)
-    {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
-
-    try do
+    with {:ok, {statement, values, changeset}} <- setup_insert(keyspace, changeset),
+         {:ok, prepared} <- Cassandrax.Connection.prepare(conn, statement)
+    do
       case Cassandrax.Connection.execute(conn, prepared, values, opts) do
         {:ok, _void_response} -> load_changes(changeset, :loaded)
         {:error, error} -> {:error, error}
       end
-    rescue
-      error in FunctionClauseError -> {:error, error}
     end
   end
 
   def insert(keyspace, %{__struct__: _} = struct, opts),
     do: insert(keyspace, Ecto.Changeset.change(struct), opts)
+
+  """
+  Ecto uses dump function in Type module to check if the given data serializes to the database fields' types.
+  We are also using the dump function, but not returning the dumped values so that Xandra can serialize the values.
+  We are only using dump to type check and return an error if the given data is invalid.
+  """
+  defp type_check(_, []), do: {:ok, []}
+  defp type_check(schema, [{field, value}|remaining_changes]) do
+    type = schema.__schema__(:type, field)
+    case Ecto.Type.dump(type, value) do
+      {:ok, _dumped_value} ->
+        with {:ok, rest} <- type_check(schema, remaining_changes),
+             do: {:ok, [value|rest]}
+      :error ->
+        {:error, %Ecto.ChangeError{
+          message: "value `#{inspect(value)}` for `#{inspect(schema)}`.`#{field}` does not match type #{type}"
+        }}
+      # :error ->
+      #   {:error, Cassandrax.InvalidTypeError.exception(
+      #     value: value,
+      #     schema: schema,
+      #     field: field,
+      #     type: type
+      #   )}
+    end
+  end
 
   defp setup_insert(keyspace, %Changeset{valid?: true} = changeset) do
     struct = changeset.data
@@ -85,9 +108,9 @@ defmodule Cassandrax.Keyspace.Schema do
 
     changeset = apply_defaults(changeset, struct, fields)
     statement = Cassandrax.Connection.insert(keyspace_name, table, changeset.changes)
-    values = Enum.map(changeset.changes, fn {_field, value} -> value end)
 
-    {statement, values, changeset}
+    with {:ok, values} <- type_check(schema, Map.to_list(changeset.changes)),
+         do: {:ok, {statement, values, changeset}}
   end
 
   defp setup_insert(_keyspace, %Changeset{valid?: false} = changeset),
@@ -120,16 +143,12 @@ defmodule Cassandrax.Keyspace.Schema do
     conn = keyspace.__conn__
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
-    {statement, values, changeset} = setup_update(keyspace, changeset)
-    {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
-
-    try do
+    with {:ok, {statement, values, changeset}} <- setup_update(keyspace, changeset),
+         {:ok, prepared} <- Cassandrax.Connection.prepare(conn, statement) do
       case Cassandrax.Connection.execute(conn, prepared, values, opts) do
         {:ok, _void_response} -> load_changes(changeset, :loaded)
         {:error, error} -> {:error, error}
       end
-    rescue
-      error in FunctionClauseError -> {:error, error}
     end
   end
 
@@ -144,10 +163,13 @@ defmodule Cassandrax.Keyspace.Schema do
     keyspace_name = keyspace.__keyspace__
 
     statement = Cassandrax.Connection.update(keyspace_name, table, changeset.changes, primary_key)
-    values = Enum.map(changeset.changes, fn {_field, value} -> value end)
-    values = values ++ Enum.map(primary_key, fn field -> Map.get(struct, field) end)
+    primary_key_fields = Enum.map(primary_key, fn field -> {field, Map.get(struct, field)} end)
 
-    {statement, values, changeset}
+    with {:ok, changeset_values} <- type_check(schema, Map.to_list(changeset.changes)),
+         {:ok, primary_key_values} <- type_check(schema, primary_key_fields) do
+      values = changeset_values ++ primary_key_values
+      {:ok, {statement, values, changeset}}
+    end
   end
 
   defp setup_update(_keyspace, %Changeset{valid?: false} = changeset),
@@ -160,16 +182,12 @@ defmodule Cassandrax.Keyspace.Schema do
     conn = keyspace.__conn__
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
-    {statement, values, changeset} = setup_delete(keyspace, changeset)
-    {:ok, prepared} = Cassandrax.Connection.prepare(conn, statement)
-
-    try do
+    with {:ok, {statement, values, changeset}} <- setup_delete(keyspace, changeset),
+         {:ok, prepared} <- Cassandrax.Connection.prepare(conn, statement) do
       case Cassandrax.Connection.execute(conn, prepared, values, opts) do
         {:ok, _void_response} -> load_changes(changeset, :deleted)
         {:error, error} -> {:error, error}
       end
-    rescue
-      error in FunctionClauseError -> {:error, error}
     end
   end
 
@@ -184,9 +202,10 @@ defmodule Cassandrax.Keyspace.Schema do
     keyspace_name = keyspace.__keyspace__
 
     statement = Cassandrax.Connection.delete(keyspace_name, table, primary_key)
-    values = Enum.map(primary_key, fn field -> Map.get(struct, field) end)
+    primary_key_fields = Enum.map(primary_key, fn field -> {field, Map.get(struct, field)} end)
 
-    {statement, values, changeset}
+    with {:ok, values} <- type_check(schema, primary_key_fields),
+      do: {:ok, {statement, values, changeset}}
   end
 
   defp setup_delete(_keyspace, %Changeset{valid?: false} = changeset),
@@ -196,7 +215,7 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.batch_insert/2`
   """
   def batch_insert(keyspace, batch, %Changeset{} = changeset) do
-    {statement, values, _changeset} = setup_insert(keyspace, changeset)
+    {:ok, {statement, values, _changeset}} = setup_insert(keyspace, changeset)
     Cassandrax.Keyspace.Batch.add(batch, statement, values)
   end
 
@@ -207,7 +226,7 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.batch_update/2`
   """
   def batch_update(keyspace, batch, %Changeset{} = changeset) do
-    {statement, values, _changeset} = setup_update(keyspace, changeset)
+    {:ok, {statement, values, _changeset}} = setup_update(keyspace, changeset)
     Cassandrax.Keyspace.Batch.add(batch, statement, values)
   end
 
@@ -218,7 +237,7 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.batch_delete/2`
   """
   def batch_delete(keyspace, batch, %Changeset{} = changeset) do
-    {statement, values, _changeset} = setup_delete(keyspace, changeset)
+    {:ok, {statement, values, _changeset}} = setup_delete(keyspace, changeset)
     Cassandrax.Keyspace.Batch.add(batch, statement, values)
   end
 

@@ -114,11 +114,11 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "insert invalid data" do
-      assert {:error, %FunctionClauseError{}} = TestKeyspace.insert(@invalid_one)
+      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.insert(@invalid_one)
     end
 
     test "insert! invalid data" do
-      assert_raise(FunctionClauseError, fn -> TestKeyspace.insert!(@invalid_one) end)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.insert!(@invalid_one) end)
     end
 
     test "update valid data" do
@@ -137,12 +137,12 @@ defmodule Cassandrax.KeyspaceTest do
 
     test "update invalid data" do
       changeset = Changeset.change(@zero, value: 1)
-      assert  {:error, %FunctionClauseError{}} = TestKeyspace.update(changeset)
+      assert  {:error, %Ecto.ChangeError{}} = TestKeyspace.update(changeset)
     end
 
     test "update! invalid data" do
       changeset = Changeset.change(@zero, value: 1)
-      assert_raise(FunctionClauseError, fn -> TestKeyspace.update!(changeset) end)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.update!(changeset) end)
     end
 
     test "delete valid data" do
@@ -156,11 +156,11 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "delete invalid id" do
-      assert {:error, %FunctionClauseError{}} = TestKeyspace.delete(@invalid_id)
+      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.delete(@invalid_id)
     end
 
     test "delete! invalid id" do
-      assert_raise(FunctionClauseError, fn -> TestKeyspace.delete!(@invalid_id)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.delete!(@invalid_id)
       end)
     end
   end
