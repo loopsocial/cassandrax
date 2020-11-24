@@ -89,13 +89,6 @@ defmodule Cassandrax.Keyspace.Schema do
         {:error, %Ecto.ChangeError{
           message: "value `#{inspect(value)}` for `#{inspect(schema)}`.`#{field}` does not match type #{type}"
         }}
-      # :error ->
-      #   {:error, Cassandrax.InvalidTypeError.exception(
-      #     value: value,
-      #     schema: schema,
-      #     field: field,
-      #     type: type
-      #   )}
     end
   end
 
