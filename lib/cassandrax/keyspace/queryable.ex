@@ -55,7 +55,7 @@ defmodule Cassandrax.Keyspace.Queryable do
     %{allow_filtering: allow_filtering} = query
     schema = assert_schema!(query)
 
-    [partition_keys | clustering_keys] = schema.__schema__(:pk)
+    [partition_keys | clustering_keys] = schema.__schema__(:primary_key)
     {partition_filters, other_filters} = Keyword.split(primary_key, partition_keys)
 
     partition_filters = filters_for_partition(allow_filtering, partition_keys, partition_filters)

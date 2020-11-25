@@ -59,16 +59,19 @@ defmodule Cassandrax.Query do
   Used to filter the results. You can chain `where` expressions.
 
   ## Example
-
+  Single where clause.
   ```
   query = where(User, id: 1)
-  MyKeyspace.all(query)
 
   ```
-
+  You can chain where clauses.
   ```
   query = User |> where(:id > 1) |> where(:user_name != "alice")
-  MyKeyspace.all(query)
+  ```
+  CassandraDB doesn't allow certain queries to be executed for performance reasons, such as `where`.
+  You may need to use `allow_filtering\0` to bypass this.
+  ```
+  query = User |> allow_filtering() |> where(:id > 1) |> where(:user_name != "alice")
   ```
   """
   @callback where(queryable :: Cassandrax.Queryable.t(), where :: Keyword.t()) ::
@@ -117,13 +120,37 @@ defmodule Cassandrax.Query do
               Cassandrax.Query.t()
 
   @doc """
+  A query expression that enables filtering in certain Cassandra queries.
 
+  CassandraDB doesn't allow certain queries to be executed for performance reasons, such as `where`.
+  You need to set `ALLOW FILTERING` to bypass this block. More details in CassandraDB docs.
+
+  ## Example
+  ```
+  query = User |> allow_filtering() |> where(:id > 1) |> where(:user_name != "alice")
+  ```
   """
   @callback allow_filtering(queryable :: Cassandrax.Queryable.t(), allow_filtering :: Keyword.t()) ::
               Cassandrax.Query.t()
 
   @doc """
-  A per partition limit expression that controls the number of results return from each partition.
+  A per partition limit expression controls the number of results return from each partition.
+
+  Cassandra will then return only the first number of rows given in the `per_partition_limit`
+  (clustered by the partition key) from that partition, regardless of how many ocurences of when may be present.
+  More details in CassandraDB docs.
+
+
+  ## Example
+
+  Default `per_partition_limit` is 100.
+  ```
+  query = per_partition_limit(User)
+  ```
+  Or you can set a custom `per_partition_limit`
+  ```
+  query = per_partition_limit(User, 10)
+  ```
   """
   @callback per_partition_limit(
               queryable :: Cassandrax.Queryable.t(),

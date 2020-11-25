@@ -239,6 +239,7 @@ defmodule Cassandrax.Keyspace.Schema do
     do: %{struct | __meta__: %{meta | state: state}}
 
   defp type_check(_, []), do: {:ok, []}
+
   defp type_check(schema, [{field, value} | remaining_changes]) do
     type = schema.__schema__(:type, field)
 
@@ -248,6 +249,7 @@ defmodule Cassandrax.Keyspace.Schema do
           {:ok, rest} -> {:ok, [value | rest]}
           other -> other
         end
+
       :error ->
         {:error,
          %Ecto.ChangeError{

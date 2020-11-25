@@ -6,6 +6,7 @@ defmodule Cassandrax.Schema do
 
   `Cassandrax.Schema` mixin uses `Ecto.Schema` mixin.
   """
+  @type t :: struct()
 
   @doc false
   defmacro __using__(_opts) do

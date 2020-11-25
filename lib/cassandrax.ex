@@ -3,6 +3,9 @@ defmodule Cassandrax do
   Cassandrax is a Cassandra ORM built on top of [Xandra](https://github.com/lexhide/xandra) library and
   [Ecto](https://github.com/elixir-ecto/ecto) data mapping.
 
+  Cassandrax is inspired by the [Triton](https://github.com/blitzstudios/triton) and
+  [Ecto](https://github.com/elixir-ecto/ecto) projects.
+
   It allows you to build and run CQL statements as well as map results to Elixir structs.
   """
   use Application
