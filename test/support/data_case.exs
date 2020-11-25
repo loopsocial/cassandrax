@@ -26,13 +26,11 @@ defmodule Cassandrax.DataCase do
       # We need to wait for the connection to start executing statements
       defp await_connected(cluster, statement, tries \\ 4, last_error \\ nil)
 
-      defp await_connected(_cluster, _statement, 0, last_error),
-        do:
-          raise(
-            "timed out waiting for connection to cassandra; connection error: #{
-              inspect(last_error)
-            }"
-          )
+      defp await_connected(_cluster, _statement, 0, last_error) do
+        raise(
+          "timed out waiting for connection to cassandra; connection error: #{inspect(last_error)}"
+        )
+      end
 
       defp await_connected(cluster, statement, tries, _) do
         Process.sleep(50)
