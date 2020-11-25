@@ -2,7 +2,7 @@ defprotocol Cassandrax.Queryable do
   @moduledoc """
   Converts a data structure into an `Cassandrax.Query`.
 
-  ##Example
+  ## Example
 
     ```
     defmodule User do

@@ -350,15 +350,15 @@ defmodule Cassandrax.Keyspace do
   @doc """
   Adds an `INSERT` query to the given batch.
   """
-  @callback batch_insert(batch :: Cassandrax.Keyspace.Batch.t(), Cassandrax.Schema.t()) :: none()
+  @callback batch_insert(batch :: Cassandrax.Keyspace.Batch.t(), Cassandrax.Schema.t()) :: :ok
 
   @doc """
   Adds an `UPDATE` query to the given batch.
   """
-  @callback batch_update(batch :: Cassandrax.Keyspace.Batch.t(), Cassandrax.Schema.t()) :: none()
+  @callback batch_update(batch :: Cassandrax.Keyspace.Batch.t(), Cassandrax.Schema.t()) :: :ok
 
   @doc """
   Adds a `DELETE` query to the given batch.
   """
-  @callback batch_delete(batch :: Cassandrax.Keyspace.Batch.t(), Cassandrax.Schema.t()) :: none()
+  @callback batch_delete(batch :: Cassandrax.Keyspace.Batch.t(), Cassandrax.Schema.t()) :: :ok
 end
