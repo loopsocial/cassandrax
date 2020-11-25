@@ -7,15 +7,10 @@ defmodule Cassandrax.Schema do
   `Cassandrax.Schema` mixin uses `Ecto.Schema` mixin.
   """
 
-  @doc """
-  Converts a map of data into a struct for this module.
-  """
-  @callback convert(data :: map | nil) :: struct | nil
-
   @doc false
   defmacro __using__(_opts) do
     quote do
-      # First we import the Schema macroes
+      # First we import the Schema macros
       import Cassandrax.Schema
 
       # Use Ecto.Schema to leverage the struct and other helpers
@@ -50,12 +45,10 @@ defmodule Cassandrax.Schema do
 
       table "users" do
         field :id, :integer
-        field :value, :string
-        field :svalue, MapSetType
+        field :user_name, :string
       end
     end
     ```
-
   """
   defmacro table(source, do: block) do
     quote do
@@ -111,6 +104,7 @@ defmodule Cassandrax.Schema do
       end
 
       def convert(nil), do: nil
+
       def convert(data) when is_map(data) do
         sanitized_map =
           apply(__MODULE__, :__schema__, [:fields])
@@ -121,4 +115,9 @@ defmodule Cassandrax.Schema do
       end
     end
   end
+
+  @doc """
+  Converts a map of data into a struct for this module.
+  """
+  @callback convert(data :: map | nil) :: struct | nil
 end

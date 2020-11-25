@@ -21,6 +21,8 @@ defprotocol Cassandrax.Queryable do
 
   @doc """
   Converts the given `data` into an `Cassandrax.Query`.
+
+  May raise a CompileError if the data is invalid.
   """
   def to_query(data)
 end

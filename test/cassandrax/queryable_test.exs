@@ -1,4 +1,6 @@
 defmodule Cassandrax.QueryableTest do
+  @moduledoc """
+  """
   use ExUnit.Case
 
   describe "to_query/1" do
