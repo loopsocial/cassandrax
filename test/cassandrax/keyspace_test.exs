@@ -12,9 +12,9 @@ defmodule TestData do
   @primary_key [:id]
 
   table "test_data" do
-    field :id, :string
-    field :value, :string
-    field :svalue, MapSetType
+    field(:id, :string)
+    field(:value, :string)
+    field(:svalue, MapSetType)
   end
 
   def changeset(%__MODULE__{} = data, attrs \\ %{}) do
@@ -63,6 +63,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   defp schema_equal({:ok, a}, {:ok, b}), do: schema_equal(a, b)
+
   defp schema_equal(a, b) do
     Map.delete(a, :__meta__) == Map.delete(b, :__meta__)
   end
@@ -114,11 +115,11 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "insert invalid data" do
-      assert {:error, %FunctionClauseError{}} = TestKeyspace.insert(@invalid_one)
+      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.insert(@invalid_one)
     end
 
     test "insert! invalid data" do
-      assert_raise(FunctionClauseError, fn -> TestKeyspace.insert!(@invalid_one) end)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.insert!(@invalid_one) end)
     end
 
     test "update valid data" do
@@ -137,12 +138,12 @@ defmodule Cassandrax.KeyspaceTest do
 
     test "update invalid data" do
       changeset = Changeset.change(@zero, value: 1)
-      assert  {:error, %FunctionClauseError{}} = TestKeyspace.update(changeset)
+      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.update(changeset)
     end
 
     test "update! invalid data" do
       changeset = Changeset.change(@zero, value: 1)
-      assert_raise(FunctionClauseError, fn -> TestKeyspace.update!(changeset) end)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.update!(changeset) end)
     end
 
     test "delete valid data" do
@@ -156,12 +157,11 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "delete invalid id" do
-      assert {:error, %FunctionClauseError{}} = TestKeyspace.delete(@invalid_id)
+      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.delete(@invalid_id)
     end
 
     test "delete! invalid id" do
-      assert_raise(FunctionClauseError, fn -> TestKeyspace.delete!(@invalid_id)
-      end)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.delete!(@invalid_id) end)
     end
   end
 
@@ -217,6 +217,7 @@ defmodule Cassandrax.KeyspaceTest do
 
     test "duplicate key insert" do
       expectation = %{@two | value: "new two"}
+
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_insert(expectation)
@@ -269,25 +270,35 @@ defmodule Cassandrax.KeyspaceTest do
       changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "last one")
       changeset3 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "one last one")
       expectation = ["new one", "last one", "one last one"]
+
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_update(changeset1)
         |> TestKeyspace.batch_update(changeset2)
         |> TestKeyspace.batch_update(changeset3)
       end)
+
       result = TestData |> where(id: "1") |> TestKeyspace.one()
       assert result.value in expectation
     end
 
     test "update set data of the same records" do
-      changeset1 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(svalue: MapSet.new(["hello world"]))
-      changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(svalue: MapSet.new(["pandemic world"]))
+      changeset1 =
+        TestKeyspace.get(TestData, id: "1")
+        |> Changeset.change(svalue: MapSet.new(["hello world"]))
+
+      changeset2 =
+        TestKeyspace.get(TestData, id: "1")
+        |> Changeset.change(svalue: MapSet.new(["pandemic world"]))
+
       expectation = %{@one | svalue: MapSet.new(["hello world", "pandemic world"])}
+
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_update(changeset1)
         |> TestKeyspace.batch_update(changeset2)
       end)
+
       result = TestData |> where(id: "1") |> TestKeyspace.one()
       assert result == expectation
     end
@@ -295,6 +306,7 @@ defmodule Cassandrax.KeyspaceTest do
     test "single delete" do
       TestKeyspace.batch(fn batch ->
         data = TestKeyspace.get(TestData, id: "0")
+
         batch
         |> TestKeyspace.batch_delete(data)
       end)
@@ -310,12 +322,13 @@ defmodule Cassandrax.KeyspaceTest do
         |> TestKeyspace.batch_delete(@one)
       end)
 
-      refute list_set_includes?(TestKeyspace.all(TestData), [@zero,  @one])
+      refute list_set_includes?(TestKeyspace.all(TestData), [@zero, @one])
     end
 
     test "insert and update" do
       changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
       expectation = %{@one | value: "new one"}
+
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_insert(@four)
@@ -328,6 +341,7 @@ defmodule Cassandrax.KeyspaceTest do
     test "delete then update" do
       changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
       expectation = [@one, %{@one | value: "new one"}, nil]
+
       TestKeyspace.batch(fn batch ->
         batch
         |> TestKeyspace.batch_delete(@one)
@@ -337,7 +351,7 @@ defmodule Cassandrax.KeyspaceTest do
       result = TestData |> where(id: "1") |> TestKeyspace.one()
       assert result in expectation
     end
-   end
+  end
 
   describe "cql" do
     @describetag seeds: [@zero, @one, @two]
@@ -346,6 +360,7 @@ defmodule Cassandrax.KeyspaceTest do
       statement = """
       SELECT * FROM #{TestKeyspace.__keyspace__()}.test_data
       """
+
       assert {:ok, _} = Cassandrax.cql(TestConn, statement)
 
       statement = [
@@ -362,6 +377,7 @@ defmodule Cassandrax.KeyspaceTest do
       statement = """
       SELECT * #{TestKeyspace.__keyspace__()}.test_data
       """
+
       assert {:error, %{reason: :invalid_syntax}} = Cassandrax.cql(TestConn, statement)
     end
   end
