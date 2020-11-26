@@ -96,11 +96,27 @@ defmodule Cassandrax.Query do
   @doc """
   An order by query expression.
 
-  Orders the fields based on a given key or list of keys.
+  Orders the fields based on a given key or list of keys. Order by needs to be paired with a where clause, specifically with where clauses that have equality or `in`. You also need to setup the table correctly to be able to perform order by queries.
+
+  ## Example Table Setup
+
+  ```
+  statement = [
+      "CREATE TABLE IF NOT EXISTS ",
+      "MyKeyspace.ordered_(",
+      "id int, ",
+      "device_id int, ",
+      "value text, ",
+      "PRIMARY KEY (id, device_id))",
+      "WITH CLUSTERING ORDER BY (device_id DESC)"
+    ]
+
+  Cassandrax.cql(MyConn, statement)
+  ```
 
   ## Example
   ```
-  query = order_by(User, [:id])
+  query = User |> allow_filtering() |> where(:id == 1) |> order_by([:device_id])
   ```
   """
   @callback order_by(queryable :: Cassandrax.Queryable.t(), order_by :: Keyword.t()) ::
@@ -109,7 +125,7 @@ defmodule Cassandrax.Query do
   @doc """
   A distinct query expression.
 
-  Only returns the distinct records from the result. Only works with partition_key(s).
+  Only returns the distinct records from the result. Only works with a list of partition_key(s).
 
   ##Example
   ```
