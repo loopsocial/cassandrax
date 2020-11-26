@@ -72,7 +72,7 @@ defmodule Cassandrax.Connection do
   defp order_by(%{order_bys: []}), do: []
 
   defp order_by(%{order_bys: order_bys}) when is_list(order_bys) do
-    [" ORDER BY (", intersperse_map(order_bys, ", ", &quote_name(&1)), ?)]
+    [" ORDER BY ", intersperse_map(order_bys, ", ", &quote_name(&1))]
   end
 
   defp per_partition_limit(%{per_partition_limit: nil}), do: {[], []}

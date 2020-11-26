@@ -54,6 +54,49 @@ defmodule Cassandrax.KeyspaceTest do
     end
   end
 
+  defmodule OrderedTestData do
+    use Cassandrax.Schema
+
+    import Ecto.Changeset
+    import Cassandrax.Query
+
+    alias Cassandrax.TestConn
+
+    @type t :: %__MODULE__{}
+    @primary_key [:id, :value]
+
+    table "ordered_test_data" do
+      field(:id, :integer)
+      field(:value, :string)
+      field(:svalue, MapSetType)
+    end
+
+    def changeset(%__MODULE__{} = data, attrs \\ %{}) do
+      data
+      |> cast(attrs, [:id, :value])
+      |> validate_required([:id])
+    end
+
+    def create_table do
+      statement = [
+        "CREATE TABLE IF NOT EXISTS ",
+        "#{TestKeyspace.__keyspace__()}.ordered_test_data(",
+        "id int, ",
+        "value text, ",
+        "PRIMARY KEY (id, value))",
+        "WITH CLUSTERING ORDER BY (value DESC)"
+      ]
+
+      {:ok, _result} = Cassandrax.cql(TestConn, statement)
+    end
+
+    def drop_table do
+      statement = "DROP TABLE IF EXISTS #{TestKeyspace.__keyspace__()}.test_data"
+
+      {:ok, _result} = Cassandrax.cql(TestConn, statement)
+    end
+  end
+
   setup do
     TestData.create_table()
     on_exit(fn -> TestData.drop_table() end)
@@ -199,7 +242,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "queryables" do
-    setup [:create_zero, :create_one]
+    @describetag tables: [TestData], seeds: [@zero, @one]
 
     test "get", %{zero: zero} do
       assert TestKeyspace.get(TestData, id: "0") == zero
@@ -212,6 +255,8 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "one" do
+    @describetag tables: [TestData]
+
     test "fails on table with no entries" do
       assert TestKeyspace.one(TestData) == nil
     end
@@ -233,7 +278,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "batch operations" do
-    setup [:create_zero, :create_one]
+    @describetag tables: [TestData], seeds: [@zero, @one]
 
     test "empty batch" do
       TestKeyspace.batch(fn batch -> batch end)
@@ -400,7 +445,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "cql" do
-    setup [:create_zero, :create_one, :create_two]
+    @describetag tables: [TestData], seeds: [@zero, @one, @two]
 
     test "valid cql" do
       statement = """
@@ -425,6 +470,19 @@ defmodule Cassandrax.KeyspaceTest do
       """
 
       assert {:error, %{reason: :invalid_syntax}} = Cassandrax.cql(TestConn, statement)
+    end
+  end
+
+  describe "order_by" do
+    @describetag tables: [OrderedTestData], seeds: [@ordered_zero, @ordered_one, @ordered_one2]
+
+    test "same id different values" do
+      query = OrderedTestData |> allow_filtering() |> where(:id == 1) |> order_by([:value])
+
+      assert [
+               %OrderedTestData{id: 1, value: "one"},
+               %OrderedTestData{id: 1, svalue: nil, value: "zero one"}
+             ] == TestKeyspace.all(query)
     end
   end
 end
