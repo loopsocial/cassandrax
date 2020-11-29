@@ -1,48 +1,5 @@
 Code.require_file("../support/data_case.exs", __DIR__)
 
-defmodule TestData do
-  use Cassandrax.Schema
-
-  import Ecto.Changeset
-  import Cassandrax.Query
-
-  alias Cassandrax.TestConn
-
-  @type t :: %__MODULE__{}
-  @primary_key [:id]
-
-  table "test_data" do
-    field(:id, :string)
-    field(:value, :string)
-    field(:svalue, MapSetType)
-  end
-
-  def changeset(%__MODULE__{} = data, attrs \\ %{}) do
-    data
-    |> cast(attrs, [:id, :value])
-    |> validate_required([:id])
-  end
-
-  def create_table do
-    statement = [
-      "CREATE TABLE IF NOT EXISTS ",
-      "#{TestKeyspace.__keyspace__()}.test_data(",
-      "id text, ",
-      "value text, ",
-      "svalue set<text>, ",
-      "PRIMARY KEY (id))"
-    ]
-
-    {:ok, _result} = Cassandrax.cql(TestConn, statement)
-  end
-
-  def drop_table do
-    statement = "DROP TABLE IF EXISTS #{TestKeyspace.__keyspace__()}.test_data"
-
-    {:ok, _result} = Cassandrax.cql(TestConn, statement)
-  end
-end
-
 defmodule Cassandrax.KeyspaceTest do
   use Cassandrax.DataCase
 
@@ -50,15 +7,56 @@ defmodule Cassandrax.KeyspaceTest do
   import Cassandrax.Query
 
   alias Cassandrax.TestConn
-  alias Cassandrax.Schema
-  alias Cassandrax.Keyspace.Batch
+  # alias Cassandrax.Schema
+  # alias Cassandrax.Keyspace.Batch
   alias Ecto.Changeset
 
-  setup context do
+  defmodule TestData do
+    use Cassandrax.Schema
+
+    import Ecto.Changeset
+    import Cassandrax.Query
+
+    alias Cassandrax.TestConn
+
+    @type t :: %__MODULE__{}
+    @primary_key [:id]
+
+    table "test_data" do
+      field(:id, :string)
+      field(:value, :string)
+      field(:svalue, MapSetType)
+    end
+
+    def changeset(%__MODULE__{} = data, attrs \\ %{}) do
+      data
+      |> cast(attrs, [:id, :value])
+      |> validate_required([:id])
+    end
+
+    def create_table do
+      statement = [
+        "CREATE TABLE IF NOT EXISTS ",
+        "#{TestKeyspace.__keyspace__()}.test_data(",
+        "id text, ",
+        "value text, ",
+        "svalue set<text>, ",
+        "PRIMARY KEY (id))"
+      ]
+
+      {:ok, _result} = Cassandrax.cql(TestConn, statement)
+    end
+
+    def drop_table do
+      statement = "DROP TABLE IF EXISTS #{TestKeyspace.__keyspace__()}.test_data"
+
+      {:ok, _result} = Cassandrax.cql(TestConn, statement)
+    end
+  end
+
+  setup do
     TestData.create_table()
     on_exit(fn -> TestData.drop_table() end)
-    seeds = Map.get(context, :seeds, [])
-    Enum.each(seeds, &TestKeyspace.insert!(&1))
     :ok
   end
 
@@ -76,16 +74,7 @@ defmodule Cassandrax.KeyspaceTest do
     MapSet.subset?(MapSet.new(b), MapSet.new(a))
   end
 
-  @zero %TestData{id: "0", value: "zero"}
-  @one %TestData{id: "1", value: "one", svalue: MapSet.new(["one", "another one"])}
-  @two %TestData{id: "2", value: "two"}
-  @three %TestData{id: "3", value: "three"}
-  @four %TestData{id: "4", value: "four"}
-  # invalid because 1 is an integer
-  @invalid_one %TestData{id: "1", value: 1}
-  @invalid_id %TestData{id: 1, value: 1}
-
-  describe "module functions" do
+  describe "default_options" do
     test "default option read: :one" do
       assert TestKeyspace.__default_options__(:read) == [consistency: :one]
     end
@@ -93,88 +82,132 @@ defmodule Cassandrax.KeyspaceTest do
     test "default option write: :one" do
       assert TestKeyspace.__default_options__(:write) == [consistency: :one]
     end
+  end
 
-    test "keyspace" do
-      assert TestKeyspace.__keyspace__() == "test_keyspace"
+  describe "default_options with custom configs" do
+    setup do
+      Application.put_env(:cassandrax, Cassandrax.TestConn,
+        write_options: [consistency: :quorum],
+        read_options: [consistency: :local_quorum]
+      )
+
+      on_exit(fn -> Application.put_env(:cassandrax, Cassandrax.TestConn, []) end)
+
+      :ok
     end
 
-    test "connection" do
-      assert TestKeyspace.__conn__() == Cassandrax.TestConn
+    test "default option read: :one" do
+      assert TestKeyspace.__default_options__(:read) == [consistency: :local_quorum]
+    end
+
+    test "default option write: :one" do
+      assert TestKeyspace.__default_options__(:write) == [consistency: :quorum]
     end
   end
 
+  test "keyspace" do
+    assert TestKeyspace.__keyspace__() == "test_keyspace"
+  end
+
+  test "connection" do
+    assert TestKeyspace.__conn__() == Cassandrax.TestConn
+  end
+
+  @zero [id: "0", value: "zero"]
+  @one [id: "1", value: "one", svalue: MapSet.new(["one", "another one"])]
+  @two [id: "2", value: "two"]
+  @three [id: "3", value: "three"]
+  @four [id: "4", value: "four"]
+
+  # invalid because 1 is an integer
+  @invalid_one [id: "1", value: 1]
+  @invalid_id [id: 1, value: 1]
+
+  defp create_zero(_), do: [zero: fixture(@zero)]
+  defp create_one(_), do: [one: fixture(@one)]
+  defp create_two(_), do: [two: fixture(@two)]
+  # defp create_three(_), do: [three: fixture(@three)]
+  # defp create_four(_), do: [four: fixture(@four)]
+  defp fixture(data), do: struct(TestData, data) |> TestKeyspace.insert!()
+
   describe "changeset operations" do
-    @describetag seeds: [@zero]
+    setup [:create_zero]
 
     test "insert valid data" do
-      assert schema_equal(TestKeyspace.insert(@one), {:ok, @one})
+      one = struct(TestData, @one)
+      assert schema_equal(TestKeyspace.insert(one), {:ok, one})
     end
 
     test "insert! valid data" do
-      assert schema_equal(TestKeyspace.insert!(@one), @one)
+      one = struct(TestData, @one)
+      assert schema_equal(TestKeyspace.insert!(one), one)
     end
 
     test "insert invalid data" do
-      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.insert(@invalid_one)
+      invalid_one = struct(TestData, @invalid_one)
+      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.insert(invalid_one)
     end
 
     test "insert! invalid data" do
-      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.insert!(@invalid_one) end)
+      invalid_one = struct(TestData, @invalid_one)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.insert!(invalid_one) end)
     end
 
-    test "update valid data" do
-      changeset = Changeset.change(@zero, value: "new zero")
-      expectation = %{@zero | value: "new zero"}
+    test "update valid data", %{zero: zero} do
+      changeset = Changeset.change(zero, value: "new zero")
+      expectation = %{zero | value: "new zero"}
       assert schema_equal(TestKeyspace.update(changeset), {:ok, expectation})
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
 
-    test "update! valid data" do
-      changeset = Changeset.change(@zero, value: "new zero")
-      expectation = %{@zero | value: "new zero"}
+    test "update! valid data", %{zero: zero} do
+      changeset = Changeset.change(zero, value: "new zero")
+      expectation = %{zero | value: "new zero"}
       assert schema_equal(TestKeyspace.update!(changeset), expectation)
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
 
-    test "update invalid data" do
-      changeset = Changeset.change(@zero, value: 1)
+    test "update invalid data", %{zero: zero} do
+      changeset = Changeset.change(zero, value: 1)
       assert {:error, %Ecto.ChangeError{}} = TestKeyspace.update(changeset)
     end
 
-    test "update! invalid data" do
-      changeset = Changeset.change(@zero, value: 1)
+    test "update! invalid data", %{zero: zero} do
+      changeset = Changeset.change(zero, value: 1)
       assert_raise(Ecto.ChangeError, fn -> TestKeyspace.update!(changeset) end)
     end
 
-    test "delete valid data" do
-      assert schema_equal(TestKeyspace.delete(@zero), {:ok, @zero})
+    test "delete valid data", %{zero: zero} do
+      assert schema_equal(TestKeyspace.delete(zero), {:ok, zero})
       assert TestKeyspace.get(TestData, id: "0") == nil
     end
 
-    test "delete! valid data" do
-      assert schema_equal(TestKeyspace.delete!(@zero), @zero)
+    test "delete! valid data", %{zero: zero} do
+      assert schema_equal(TestKeyspace.delete!(zero), zero)
       assert TestKeyspace.get(TestData, id: "0") == nil
     end
 
     test "delete invalid id" do
-      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.delete(@invalid_id)
+      invalid_id = struct(TestData, @invalid_id)
+      assert {:error, %Ecto.ChangeError{}} = TestKeyspace.delete(invalid_id)
     end
 
     test "delete! invalid id" do
-      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.delete!(@invalid_id) end)
+      invalid_id = struct(TestData, @invalid_id)
+      assert_raise(Ecto.ChangeError, fn -> TestKeyspace.delete!(invalid_id) end)
     end
   end
 
   describe "queryables" do
-    @describetag seeds: [@zero, @one]
+    setup [:create_zero, :create_one]
 
-    test "get" do
-      assert TestKeyspace.get(TestData, id: "0") == @zero
+    test "get", %{zero: zero} do
+      assert TestKeyspace.get(TestData, id: "0") == zero
       assert TestKeyspace.get(TestData, id: "3") == nil
     end
 
-    test "all" do
-      assert list_sets_equal?(TestKeyspace.all(TestData), [@zero, @one])
+    test "all", %{zero: zero, one: one} do
+      assert list_sets_equal?(TestKeyspace.all(TestData), [zero, one])
     end
   end
 
@@ -184,62 +217,70 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "from table with one entry" do
-      TestKeyspace.insert!(@zero)
+      [zero: zero] = create_zero(nil)
 
-      assert TestKeyspace.one(TestData) == @zero
+      assert TestKeyspace.one(TestData) == zero
     end
 
     test "from table with multiple entries" do
-      TestKeyspace.insert!(@zero)
-      TestKeyspace.insert!(@one)
+      [zero: zero] = create_zero(nil)
+      [one: one] = create_one(nil)
 
-      assert TestData |> where(id: "0") |> TestKeyspace.one() == @zero
-      assert TestData |> where(id: "1") |> TestKeyspace.one() == @one
+      assert TestData |> where(id: "0") |> TestKeyspace.one() == zero
+      assert TestData |> where(id: "1") |> TestKeyspace.one() == one
       assert_raise(Cassandrax.MultipleResultsError, fn -> TestKeyspace.one(TestData) end)
     end
   end
 
   describe "batch operations" do
-    @describetag seeds: [@zero, @one]
+    setup [:create_zero, :create_one]
 
     test "empty batch" do
       TestKeyspace.batch(fn batch -> batch end)
     end
 
     test "single insert" do
-      TestKeyspace.batch(fn batch ->
-        batch
-        |> TestKeyspace.batch_insert(@two)
-      end)
+      expectation = struct(TestData, @two)
 
-      assert TestKeyspace.get(TestData, id: "2") == @two
+      TestKeyspace.batch(fn batch -> TestKeyspace.batch_insert(batch, expectation) end)
+
+      two = TestKeyspace.get(TestData, id: "2")
+      assert two.id == expectation.id
+      assert two.value == expectation.value
+      assert two.svalue == expectation.svalue
     end
 
     test "duplicate key insert" do
-      expectation = %{@two | value: "new two"}
+      expectation = %{struct(TestData, @two) | value: "new two"}
 
-      TestKeyspace.batch(fn batch ->
-        batch
-        |> TestKeyspace.batch_insert(expectation)
-      end)
+      TestKeyspace.batch(fn batch -> TestKeyspace.batch_insert(batch, expectation) end)
 
       result = TestData |> where(id: "2") |> TestKeyspace.one()
-      assert result == expectation
+      assert result.id == expectation.id
+      assert result.value == expectation.value
+      assert result.svalue == expectation.svalue
     end
 
     test "multiple inserts" do
+      three = struct(TestData, @three)
+      four = struct(TestData, @four)
+
       TestKeyspace.batch(fn batch ->
         batch
-        |> TestKeyspace.batch_insert(@three)
-        |> TestKeyspace.batch_insert(@four)
+        |> TestKeyspace.batch_insert(three)
+        |> TestKeyspace.batch_insert(four)
       end)
 
-      assert list_set_includes?(TestKeyspace.all(TestData), [@three, @four])
+      # Mimic structs being loaded from database
+      three = %{three | __meta__: %{three.__meta__ | state: :loaded}}
+      four = %{four | __meta__: %{four.__meta__ | state: :loaded}}
+
+      assert list_set_includes?(TestKeyspace.all(TestData), [three, four])
     end
 
-    test "single update" do
+    test "single update", %{zero: zero} do
       changeset = TestKeyspace.get(TestData, id: "0") |> Changeset.change(value: "new zero")
-      expectation = %{@zero | value: "new zero"}
+      expectation = %{zero | value: "new zero"}
 
       TestKeyspace.batch(fn batch ->
         batch
@@ -250,11 +291,11 @@ defmodule Cassandrax.KeyspaceTest do
       assert result == expectation
     end
 
-    test "multiple updates" do
+    test "multiple updates", %{zero: zero, one: one} do
       changeset1 = TestKeyspace.get(TestData, id: "0") |> Changeset.change(value: "new zero")
-      expectation1 = %TestData{@zero | value: "new zero"}
+      expectation1 = %TestData{zero | value: "new zero"}
       changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
-      expectation2 = %TestData{@one | value: "new one"}
+      expectation2 = %TestData{one | value: "new one"}
 
       TestKeyspace.batch(fn batch ->
         batch
@@ -282,7 +323,7 @@ defmodule Cassandrax.KeyspaceTest do
       assert result.value in expectation
     end
 
-    test "update set data of the same records" do
+    test "update set data of the same records", %{one: one} do
       changeset1 =
         TestKeyspace.get(TestData, id: "1")
         |> Changeset.change(svalue: MapSet.new(["hello world"]))
@@ -291,7 +332,7 @@ defmodule Cassandrax.KeyspaceTest do
         TestKeyspace.get(TestData, id: "1")
         |> Changeset.change(svalue: MapSet.new(["pandemic world"]))
 
-      expectation = %{@one | svalue: MapSet.new(["hello world", "pandemic world"])}
+      expectation = %{one | svalue: MapSet.new(["hello world", "pandemic world"])}
 
       TestKeyspace.batch(fn batch ->
         batch
@@ -315,36 +356,41 @@ defmodule Cassandrax.KeyspaceTest do
       assert result == nil
     end
 
-    test "multiple deletes" do
+    test "multiple deletes", %{zero: zero, one: one} do
       TestKeyspace.batch(fn batch ->
         batch
-        |> TestKeyspace.batch_delete(@zero)
-        |> TestKeyspace.batch_delete(@one)
+        |> TestKeyspace.batch_delete(zero)
+        |> TestKeyspace.batch_delete(one)
       end)
 
-      refute list_set_includes?(TestKeyspace.all(TestData), [@zero, @one])
+      refute list_set_includes?(TestKeyspace.all(TestData), [zero, one])
     end
 
-    test "insert and update" do
+    test "insert and update", %{one: one} do
+      four = struct(TestData, @four)
+
       changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
-      expectation = %{@one | value: "new one"}
+      expectation = %{one | value: "new one"}
 
       TestKeyspace.batch(fn batch ->
         batch
-        |> TestKeyspace.batch_insert(@four)
+        |> TestKeyspace.batch_insert(four)
         |> TestKeyspace.batch_update(changeset)
       end)
 
-      assert list_set_includes?(TestKeyspace.all(TestData), [@four, expectation])
+      # Mimic structs being loaded from database
+      four = %{four | __meta__: %{four.__meta__ | state: :loaded}}
+
+      assert list_set_includes?(TestKeyspace.all(TestData), [four, expectation])
     end
 
-    test "delete then update" do
+    test "delete then update", %{one: one} do
       changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
-      expectation = [@one, %{@one | value: "new one"}, nil]
+      expectation = [one, %{one | value: "new one"}, nil]
 
       TestKeyspace.batch(fn batch ->
         batch
-        |> TestKeyspace.batch_delete(@one)
+        |> TestKeyspace.batch_delete(one)
         |> TestKeyspace.batch_update(changeset)
       end)
 
@@ -354,7 +400,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "cql" do
-    @describetag seeds: [@zero, @one, @two]
+    setup [:create_zero, :create_one, :create_two]
 
     test "valid cql" do
       statement = """

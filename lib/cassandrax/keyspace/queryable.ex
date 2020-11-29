@@ -16,7 +16,14 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
-  defp convert_results(%{schema: schema}, results), do: Enum.map(results, &schema.convert/1)
+  defp convert_results(%{schema: schema}, results) do
+    results
+    |> Stream.map(&schema.convert/1)
+    |> Enum.map(&loaded_metadata/1)
+  end
+
+  defp loaded_metadata(%{__meta__: meta} = struct),
+    do: %{struct | __meta__: %{meta | state: :loaded}}
 
   @doc """
   Implementation for `Cassandrax.Keyspace.get/3`.

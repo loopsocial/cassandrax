@@ -12,11 +12,10 @@ defmodule Cassandrax.Keyspace do
 
       @keyspace_name Keyword.fetch!(opts, :name)
       @cluster Keyword.fetch!(opts, :cluster)
-      @cluster_config Application.get_env(:cassandrax, @cluster)
       @conn_pool Keyword.get(opts, :pool, @cluster)
 
       def config do
-        {:ok, config} = Cassandrax.Supervisor.runtime_config(@cluster, @cluster_config)
+        {:ok, config} = Cassandrax.Supervisor.runtime_config(@cluster, [])
 
         config
       end

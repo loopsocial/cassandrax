@@ -3,7 +3,12 @@ defmodule Cassandrax.Supervisor do
 
   use Supervisor
 
-  @defaults [timeout: 100, pool_size: 50]
+  @defaults [
+    timeout: 100,
+    pool_size: 50,
+    write_options: [consistency: :one],
+    read_options: [consistency: :one]
+  ]
 
   def child_spec(cluster_or_keyspace, config) do
     %{
@@ -23,7 +28,10 @@ defmodule Cassandrax.Supervisor do
   # USE keyspace_name, so you can use a keyspace agnostic connection to run migrations that
   # actually create the keyspace
   def runtime_config(cluster_or_keyspace, config) do
-    {authentication, config} = pop_authentication_config(config)
+    cluster_config =
+      Application.get_env(:cassandrax, cluster_or_keyspace, []) |> Keyword.merge(config)
+
+    {authentication, config} = pop_authentication_config(cluster_config)
 
     config =
       @defaults
