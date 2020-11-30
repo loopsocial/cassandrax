@@ -39,6 +39,30 @@ defmodule Cassandrax.Query.Builder do
   def build_fragment(:where, {operator, _, [field, value]}) when operator in @allowed_operators,
     do: [field, operator, value]
 
+  # @allowed_infix_operators [
+  #   :==,
+  #   :!=,
+  #   :>,
+  #   :<,
+  #   :>=,
+  #   :<=,
+  #   :in
+  # ]
+
+  # @allowed_bare_operators [
+  #   :contains,
+  #   :contains_key
+  # ]
+
+  # defp translate_bare_operator(:contains), do: "CONTAINS"
+  # defp translate_bare_operator(:contains_key), do: "CONTAINS KEY"
+
+  # def build_fragment(:where, {operator, _, [field, value]}) when operator in @allowed_infix_operators,
+  #   do: [field, operator, value]
+
+  # def build_fragment(:where, {field, _, [{operator, _, [value]}]}) when operator in @allowed_bare_operators,
+  #   do: [field, translate_bare_operator(operator), value]
+
   def build_fragment(:where, [{field, value}]) when is_list(value), do: [field, :in, value]
   def build_fragment(:where, [{field, value}]), do: [field, :==, value]
   def build_fragment(_type, value), do: value
