@@ -7,8 +7,6 @@ defmodule Cassandrax.KeyspaceTest do
   import Cassandrax.Query
 
   alias Cassandrax.TestConn
-  # alias Cassandrax.Schema
-  # alias Cassandrax.Keyspace.Batch
   alias Ecto.Changeset
 
   defmodule TestData do
@@ -20,7 +18,7 @@ defmodule Cassandrax.KeyspaceTest do
     alias Cassandrax.TestConn
 
     @type t :: %__MODULE__{}
-    @primary_key [:id]
+    @primary_key [:id, :value]
 
     table "test_data" do
       field(:id, :string)
@@ -41,7 +39,8 @@ defmodule Cassandrax.KeyspaceTest do
         "id text, ",
         "value text, ",
         "svalue set<text>, ",
-        "PRIMARY KEY (id))"
+        "PRIMARY KEY (id, value))",
+        "WITH CLUSTERING ORDER BY (value DESC)"
       ]
 
       {:ok, _result} = Cassandrax.cql(TestConn, statement)
@@ -118,6 +117,7 @@ defmodule Cassandrax.KeyspaceTest do
   @two [id: "2", value: "two"]
   @three [id: "3", value: "three"]
   @four [id: "4", value: "four"]
+  @zero_dup [id: "0", value: "dup zero"]
 
   # invalid because 1 is an integer
   @invalid_one [id: "1", value: 1]
@@ -126,8 +126,10 @@ defmodule Cassandrax.KeyspaceTest do
   defp create_zero(_), do: [zero: fixture(@zero)]
   defp create_one(_), do: [one: fixture(@one)]
   defp create_two(_), do: [two: fixture(@two)]
+  defp create_zero_dup(_), do: [zero_dup: fixture(@zero_dup)]
   # defp create_three(_), do: [three: fixture(@three)]
   # defp create_four(_), do: [four: fixture(@four)]
+
   defp fixture(data), do: struct(TestData, data) |> TestKeyspace.insert!()
 
   describe "changeset operations" do
@@ -425,6 +427,29 @@ defmodule Cassandrax.KeyspaceTest do
       """
 
       assert {:error, %{reason: :invalid_syntax}} = Cassandrax.cql(TestConn, statement)
+    end
+  end
+
+  describe "query expressions" do
+    setup [:create_zero, :create_zero_dup, :create_one]
+
+    test "order by" do
+      query = TestData |> allow_filtering() |> where(id: "0") |> order_by([:value])
+
+      assert  [
+        %TestData{id: "0", value: "dup zero"},
+        %TestData{id: "0", value: "zero"}
+      ] = TestKeyspace.all(query)
+    end
+
+    test "distinct" do
+      query = TestData |> allow_filtering() |> distinct([:id])
+      assert [%TestData{id: "0"}, %TestData{id: "1"}] = TestKeyspace.all(query)
+    end
+
+    test "group by" do
+      query = TestData |> allow_filtering() |> group_by([:id])
+      assert [%TestData{id: "0"}, %TestData{id: "1"}] = TestKeyspace.all(query)
     end
   end
 end

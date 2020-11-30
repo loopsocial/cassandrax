@@ -54,17 +54,17 @@ defmodule Cassandrax.ConnectionTest do
 
     test "defined distinct fields" do
       queryable = TestSchema |> distinct([:id, :order_id])
-      assert all(queryable) =~ ~r/SELECT DISTINCT\("id", "order_id"\)/
+      assert all(queryable) =~ ~r/SELECT DISTINCT "id", "order_id"/
     end
 
     test "defined group by clause" do
       queryable = TestSchema |> group_by([:order_id, :field])
-      assert all(queryable) =~ ~r/GROUP BY \("order_id", "field"\)/
+      assert all(queryable) =~ ~r/GROUP BY "order_id", "field"/
     end
 
     test "defined order by clause" do
       queryable = TestSchema |> order_by([:order_id])
-      assert all(queryable) =~ ~r/ORDER BY \("order_id"\)/
+      assert all(queryable) =~ ~r/ORDER BY "order_id"/
     end
 
     test "defined per partition limit clause" do

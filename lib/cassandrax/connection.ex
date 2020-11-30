@@ -34,7 +34,7 @@ defmodule Cassandrax.Connection do
     do: ["SELECT ", intersperse_map(fields, ", ", &quote_name(&1))]
 
   defp select(%{distinct: fields}) when is_list(fields),
-    do: ["SELECT DISTINCT(", intersperse_map(fields, ", ", &quote_name(&1)), ?)]
+    do: ["SELECT DISTINCT ", intersperse_map(fields, ", ", &quote_name(&1))]
 
   defp from(%{from: table}, keyspace), do: [" FROM ", quote_table(keyspace, table)]
 
@@ -66,13 +66,13 @@ defmodule Cassandrax.Connection do
   defp group_by(%{group_bys: []}), do: []
 
   defp group_by(%{group_bys: group_bys}) when is_list(group_bys) do
-    [" GROUP BY (", intersperse_map(group_bys, ", ", &quote_name(&1)), ?)]
+    [" GROUP BY ", intersperse_map(group_bys, ", ", &quote_name(&1))]
   end
 
   defp order_by(%{order_bys: []}), do: []
 
   defp order_by(%{order_bys: order_bys}) when is_list(order_bys) do
-    [" ORDER BY (", intersperse_map(order_bys, ", ", &quote_name(&1)), ?)]
+    [" ORDER BY ", intersperse_map(order_bys, ", ", &quote_name(&1))]
   end
 
   defp per_partition_limit(%{per_partition_limit: nil}), do: {[], []}
