@@ -3,7 +3,7 @@ defmodule Cassandrax.MixProject do
 
   @version "0.0.1"
   @url "https://github.com/loopsocial/cassandrax"
-  @maintainers ["Thiago Dias"]
+  @maintainers ["Thiago Dias", "Doga Tuncay"]
 
   def project do
     [
