@@ -7,8 +7,6 @@ defmodule Cassandrax.KeyspaceTest do
   import Cassandrax.Query
 
   alias Cassandrax.TestConn
-  # alias Cassandrax.Schema
-  # alias Cassandrax.Keyspace.Batch
   alias Ecto.Changeset
 
   defmodule TestData do
@@ -20,7 +18,7 @@ defmodule Cassandrax.KeyspaceTest do
     alias Cassandrax.TestConn
 
     @type t :: %__MODULE__{}
-    @primary_key [:id]
+    @primary_key [:id, :value]
 
     table "test_data" do
       field(:id, :string)
@@ -41,48 +39,6 @@ defmodule Cassandrax.KeyspaceTest do
         "id text, ",
         "value text, ",
         "svalue set<text>, ",
-        "PRIMARY KEY (id))"
-      ]
-
-      {:ok, _result} = Cassandrax.cql(TestConn, statement)
-    end
-
-    def drop_table do
-      statement = "DROP TABLE IF EXISTS #{TestKeyspace.__keyspace__()}.test_data"
-
-      {:ok, _result} = Cassandrax.cql(TestConn, statement)
-    end
-  end
-
-  defmodule OrderedTestData do
-    use Cassandrax.Schema
-
-    import Ecto.Changeset
-    import Cassandrax.Query
-
-    alias Cassandrax.TestConn
-
-    @type t :: %__MODULE__{}
-    @primary_key [:id, :value]
-
-    table "ordered_test_data" do
-      field(:id, :integer)
-      field(:value, :string)
-      field(:svalue, MapSetType)
-    end
-
-    def changeset(%__MODULE__{} = data, attrs \\ %{}) do
-      data
-      |> cast(attrs, [:id, :value])
-      |> validate_required([:id])
-    end
-
-    def create_table do
-      statement = [
-        "CREATE TABLE IF NOT EXISTS ",
-        "#{TestKeyspace.__keyspace__()}.ordered_test_data(",
-        "id int, ",
-        "value text, ",
         "PRIMARY KEY (id, value))",
         "WITH CLUSTERING ORDER BY (value DESC)"
       ]
@@ -161,6 +117,7 @@ defmodule Cassandrax.KeyspaceTest do
   @two [id: "2", value: "two"]
   @three [id: "3", value: "three"]
   @four [id: "4", value: "four"]
+  @zero_dup [id: "0", value: "dup zero"]
 
   # invalid because 1 is an integer
   @invalid_one [id: "1", value: 1]
@@ -169,8 +126,10 @@ defmodule Cassandrax.KeyspaceTest do
   defp create_zero(_), do: [zero: fixture(@zero)]
   defp create_one(_), do: [one: fixture(@one)]
   defp create_two(_), do: [two: fixture(@two)]
+  defp create_zero_dup(_), do: [zero_dup: fixture(@zero_dup)]
   # defp create_three(_), do: [three: fixture(@three)]
   # defp create_four(_), do: [four: fixture(@four)]
+
   defp fixture(data), do: struct(TestData, data) |> TestKeyspace.insert!()
 
   describe "changeset operations" do
@@ -242,7 +201,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "queryables" do
-    @describetag tables: [TestData], seeds: [@zero, @one]
+    setup [:create_zero, :create_one]
 
     test "get", %{zero: zero} do
       assert TestKeyspace.get(TestData, id: "0") == zero
@@ -255,8 +214,6 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "one" do
-    @describetag tables: [TestData]
-
     test "fails on table with no entries" do
       assert TestKeyspace.one(TestData) == nil
     end
@@ -278,7 +235,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "batch operations" do
-    @describetag tables: [TestData], seeds: [@zero, @one]
+    setup [:create_zero, :create_one]
 
     test "empty batch" do
       TestKeyspace.batch(fn batch -> batch end)
@@ -445,7 +402,7 @@ defmodule Cassandrax.KeyspaceTest do
   end
 
   describe "cql" do
-    @describetag tables: [TestData], seeds: [@zero, @one, @two]
+    setup [:create_zero, :create_one, :create_two]
 
     test "valid cql" do
       statement = """
@@ -473,16 +430,26 @@ defmodule Cassandrax.KeyspaceTest do
     end
   end
 
-  describe "order_by" do
-    @describetag tables: [OrderedTestData], seeds: [@ordered_zero, @ordered_one, @ordered_one2]
+  describe "query expressions" do
+    setup [:create_zero, :create_zero_dup, :create_one]
 
-    test "same id different values" do
-      query = OrderedTestData |> allow_filtering() |> where(:id == 1) |> order_by([:value])
+    test "order by" do
+      query = TestData |> allow_filtering() |> where(id: "0") |> order_by([:value])
 
-      assert [
-               %OrderedTestData{id: 1, value: "one"},
-               %OrderedTestData{id: 1, svalue: nil, value: "zero one"}
-             ] == TestKeyspace.all(query)
+      assert  [
+        %TestData{id: "0", value: "dup zero"},
+        %TestData{id: "0", value: "zero"}
+      ] = TestKeyspace.all(query)
+    end
+
+    test "distinct" do
+      query = TestData |> allow_filtering() |> distinct([:id])
+      assert [%TestData{id: "0"}, %TestData{id: "1"}] = TestKeyspace.all(query)
+    end
+
+    test "group by" do
+      query = TestData |> allow_filtering() |> group_by([:id])
+      assert [%TestData{id: "0"}, %TestData{id: "1"}] = TestKeyspace.all(query)
     end
   end
 end

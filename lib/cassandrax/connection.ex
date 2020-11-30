@@ -66,7 +66,7 @@ defmodule Cassandrax.Connection do
   defp group_by(%{group_bys: []}), do: []
 
   defp group_by(%{group_bys: group_bys}) when is_list(group_bys) do
-    [" GROUP BY (", intersperse_map(group_bys, ", ", &quote_name(&1)), ?)]
+    [" GROUP BY ", intersperse_map(group_bys, ", ", &quote_name(&1))]
   end
 
   defp order_by(%{order_bys: []}), do: []
