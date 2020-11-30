@@ -123,6 +123,20 @@ defmodule Cassandrax.Query do
               Cassandrax.Query.t()
 
   @doc """
+  A group by query expression.
+
+  Allows to condense into a single row all selected rows that share the same values for a set of columns.
+  Only available for partition key level or at a clustering column level.
+
+  ## Example
+  ```
+  query = User |> allow_filtering() |> group_by([:id])
+  ```
+  """
+  @callback group_by(queryable :: Cassandrax.Queryable.t(), order_by :: Keyword.t()) ::
+  Cassandrax.Query.t()
+
+  @doc """
   A distinct query expression.
 
   Only returns the distinct records from the result. Only works with a list of partition_key(s).

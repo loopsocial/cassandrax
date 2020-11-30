@@ -6,16 +6,14 @@ defmodule Cassandrax.Keyspace do
 
   ## Setup
 
-  Application configuration.
+  test_conn_attrs = [
+    nodes: ["127.0.0.1:9043"],
+    username: "cassandra",
+    password: "cassandra"
+  ]
 
-  ```
-  config :cassandrax, Cassandrax.MyConn,
-  nodes: ["127.0.0.1:9042"],
-  username: "cassandra",
-  password: "cassandra",
-  write_options: [consistency: :one],
-  read_options: [consistency: :one]
-  ```
+  child = Cassandrax.Supervisor.child_spec(Cassandrax.MyConn, test_conn_attrs)
+  Cassandrax.start_link([child])
 
   Defining a new keyspace module.
 

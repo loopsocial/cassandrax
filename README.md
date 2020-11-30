@@ -22,15 +22,15 @@ end
 
 ## Setup
 
-Application configuration.
-
 ```elixir
-config :cassandrax, Cassandrax.MyConn,
-nodes: ["127.0.0.1:9042"],
-username: "cassandra",
-password: "cassandra",
-write_options: [consistency: :one],
-read_options: [consistency: :one]
+test_conn_attrs = [
+  nodes: ["127.0.0.1:9043"],
+  username: "cassandra",
+  password: "cassandra"
+]
+
+child = Cassandrax.Supervisor.child_spec(Cassandrax.MyConn, test_conn_attrs)
+Cassandrax.start_link([child])
 ```
 
 Defining a new keyspace module.
@@ -66,5 +66,61 @@ statement = [
 
 {:ok, _result} = Cassandrax.cql(Cassandrax.MyConn, statement)
 ```
+## Usage
 
+Inserting data. 
 
+```elixir
+user =  %User{id: 1, user_name: "alice"}
+
+{:ok, user} = MyKeyspace.insert(user) 
+user = MyKeyspace.insert!(user)
+```
+
+Updating data.
+
+```elixir
+changeset = Changeset.change(user, user_name: "bob")
+
+{:ok, updated_user} = MyKeyspace.update(changeset)
+updated_user = MyKeyspace.update!(changeset)
+```
+
+Deleting data. 
+
+```elixir
+{:ok, user} = MyKeyspace.delete(user)
+user = MyKeyspace.delete!(user)
+```
+
+Batch uperations.
+
+```elixir
+user = %User{id: 1, user_name: "alice"}
+changeset = MyKeyspace.get(TestData, id: 2) |> Changeset.change(user_name: "eve")
+
+MyKeyspace.batch(fn batch ->
+  batch
+  |> MyKeyspace.batch_insert(user)
+  |> MyKeyspace.batch_update(changeset)
+end)
+```
+
+Querying data.
+
+Get records.
+```elixir
+MyKeyspace.get(User, id: 0)
+```
+
+Get all records.
+```elixir
+MyKeyspace.all(User)
+```
+
+Get one record.
+
+```elixir
+User |> where(id: 0) |> MyKeyspace.one()
+```
+      
