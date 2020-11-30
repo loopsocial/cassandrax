@@ -7,7 +7,6 @@ defmodule Cassandrax.MixProject do
 
   def project do
     [
-      name: "Cassandrax",
       app: :cassandrax,
       version: @version,
       elixir: "~> 1.9",
@@ -15,9 +14,14 @@ defmodule Cassandrax.MixProject do
       source_url: @url,
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      package: package(),
       aliases: aliases(),
+
+      # Hexpm
+      package: package(),
       description: "An Elixir Cassandra ORM built on top of Xandra driver.",
+
+      # Docs
+      name: "Cassandrax"
       docs: [main: "Cassandrax"]
     ]
   end
