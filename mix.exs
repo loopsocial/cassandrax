@@ -21,7 +21,7 @@ defmodule Cassandrax.MixProject do
       description: "An Elixir Cassandra ORM built on top of Xandra driver.",
 
       # Docs
-      name: "Cassandrax"
+      name: "Cassandrax",
       docs: [main: "Cassandrax"]
     ]
   end
