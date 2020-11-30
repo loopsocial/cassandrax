@@ -93,7 +93,7 @@ Deleting data.
 user = MyKeyspace.delete!(user)
 ```
 
-Batch uperations.
+Batch operations.
 
 ```elixir
 user = %User{id: 1, user_name: "alice"}
@@ -123,4 +123,3 @@ Get one record.
 ```elixir
 User |> where(id: 0) |> MyKeyspace.one()
 ```
-      
