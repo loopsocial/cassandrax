@@ -59,7 +59,7 @@ defmodule Cassandrax.ConnectionTest do
 
     test "defined group by clause" do
       queryable = TestSchema |> group_by([:order_id, :field])
-      assert all(queryable) =~ ~r/GROUP BY \("order_id", "field"\)/
+      assert all(queryable) =~ ~r/GROUP BY "order_id", "field"/
     end
 
     test "defined order by clause" do
