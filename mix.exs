@@ -17,7 +17,8 @@ defmodule Cassandrax.MixProject do
       deps: deps(),
       package: package(),
       aliases: aliases(),
-      description: "An Elixir Cassandra ORM built on top of Xandra driver."
+      description: "An Elixir Cassandra ORM built on top of Xandra driver.",
+      docs: [main: "Cassandrax"]
     ]
   end
 
@@ -33,7 +34,8 @@ defmodule Cassandrax.MixProject do
   defp deps do
     [
       {:xandra, "~> 0.13"},
-      {:ecto, "~> 3.0"}
+      {:ecto, "~> 3.0"},
+      {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
   end
 

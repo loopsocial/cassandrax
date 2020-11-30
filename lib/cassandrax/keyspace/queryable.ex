@@ -1,9 +1,10 @@
 defmodule Cassandrax.Keyspace.Queryable do
+  @moduledoc false
+  require Cassandrax.Query
+
   @doc """
   Implementation for `Cassandrax.Keyspace.all/2`.
   """
-  require Cassandrax.Query
-
   def all(keyspace, queryable, opts) when is_list(opts) do
     conn = keyspace.__conn__
     queryable = Cassandrax.Queryable.to_query(queryable)
