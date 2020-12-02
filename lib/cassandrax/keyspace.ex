@@ -6,11 +6,13 @@ defmodule Cassandrax.Keyspace do
 
   ## Setup
 
+  ```
   test_conn_attrs = [
     nodes: ["127.0.0.1:9043"],
     username: "cassandra",
     password: "cassandra"
   ]
+  ```
 
   child = Cassandrax.Supervisor.child_spec(Cassandrax.MyConn, test_conn_attrs)
   Cassandrax.start_link([child])
