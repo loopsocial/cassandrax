@@ -13,8 +13,11 @@ defmodule Cassandrax.DataCase do
       end
 
       defp start_test_connection do
+        hostname = System.get_env("CASSANDRA_HOST") || "127.0.0.1"
+        port = System.get_env("CASSANDRA_PORT") || "9043"
+
         test_conn_attrs = [
-          nodes: ["127.0.0.1:9043"],
+          nodes: ["#{hostname}:#{port}"],
           username: "cassandra",
           password: "cassandra"
         ]

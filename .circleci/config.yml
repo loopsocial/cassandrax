@@ -16,11 +16,11 @@ jobs:
     docker:
       - image: circleci/elixir:1.9
       - image: cassandra
-        ports:
-          - "9043:9042"
         environment:
           HEAP_NEWSIZE: 1M
           MAX_HEAP_SIZE: 200M
+          CASSANDRA_HOSTNAME: 127.0.0.1
+          CASSANDRA_PORT: 9042
     working_directory: ~/repo
     steps:
       - checkout
