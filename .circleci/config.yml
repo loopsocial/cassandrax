@@ -9,6 +9,8 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - run: mix local.rebar --force
+      - run: mix local.hex --force
       - run: mix deps.get
 
   test:
@@ -21,4 +23,5 @@ jobs:
 
     working_directory: ~/repo
     steps:
+      - checkout
       - run: mix test
