@@ -28,7 +28,7 @@ defmodule Cassandrax.DataCase do
       end
 
       # We need to wait for the connection to start executing statements
-      defp await_connected(cluster, statement, tries \\ 100, last_error \\ nil)
+      defp await_connected(cluster, statement, tries \\ 200, last_error \\ nil)
 
       defp await_connected(_cluster, _statement, 0, last_error) do
         raise(
