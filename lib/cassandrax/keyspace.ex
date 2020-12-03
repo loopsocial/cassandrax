@@ -177,7 +177,7 @@ defmodule Cassandrax.Keyspace do
   Cassandrax.MyConn = MyKeyspace.__conn__()
   ```
   """
-  @callback __connection__ :: Cassandrax.Connection
+  @callback __conn__ :: Cassandrax.Connection
 
   @doc """
   Inserts a struct defined in `Cassandrax.Schema` or a changeset.

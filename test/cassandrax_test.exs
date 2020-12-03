@@ -1,6 +1,5 @@
 defmodule CassandraxTest do
   use ExUnit.Case
-  doctest Cassandrax
 
   describe "ensure_cluster_config!/2" do
     test "raises an error when config is nil" do

@@ -18,30 +18,32 @@ defmodule Cassandrax.KeyspaceTest do
     alias Cassandrax.TestConn
 
     @type t :: %__MODULE__{}
-    @primary_key [:id, :value]
+    @primary_key [:id, :timestamp]
 
     table "test_data" do
       field(:id, :string)
-      field(:value, :string)
+      field(:timestamp, :string)
+      field(:data, :string)
       field(:svalue, MapSetType)
     end
 
     def changeset(%__MODULE__{} = data, attrs \\ %{}) do
       data
-      |> cast(attrs, [:id, :value])
+      |> cast(attrs, [:id, :timestamp, :data, :svalue])
       |> validate_required([:id])
     end
 
     def create_table do
-      statement = [
-        "CREATE TABLE IF NOT EXISTS ",
-        "#{TestKeyspace.__keyspace__()}.test_data(",
-        "id text, ",
-        "value text, ",
-        "svalue set<text>, ",
-        "PRIMARY KEY (id, value))",
-        "WITH CLUSTERING ORDER BY (value DESC)"
-      ]
+      statement = """
+        CREATE TABLE IF NOT EXISTS
+        #{TestKeyspace.__keyspace__()}.test_data(
+        id text,
+        timestamp text,
+        data text,
+        svalue set<text>,
+        PRIMARY KEY (id, timestamp))
+        WITH CLUSTERING ORDER BY (timestamp DESC)
+      """
 
       {:ok, _result} = Cassandrax.cql(TestConn, statement)
     end
@@ -112,23 +114,21 @@ defmodule Cassandrax.KeyspaceTest do
     assert TestKeyspace.__conn__() == Cassandrax.TestConn
   end
 
-  @zero [id: "0", value: "zero"]
-  @one [id: "1", value: "one", svalue: MapSet.new(["one", "another one"])]
-  @two [id: "2", value: "two"]
-  @three [id: "3", value: "three"]
-  @four [id: "4", value: "four"]
-  @zero_dup [id: "0", value: "dup zero"]
+  @zero [id: "0", timestamp: "00:00", data: "0"]
+  @one [id: "1", timestamp: "01:00", data: "1", svalue: MapSet.new(["one", "another one"])]
+  @two [id: "2", timestamp: "02:00", data: "2"]
+  @three [id: "3", timestamp: "03:00", data: "3"]
+  @four [id: "4", timestamp: "04:00", data: "4"]
+  @zero_dup [id: "0", timestamp: "00:01", data: "0"]
 
   # invalid because 1 is an integer
-  @invalid_one [id: "1", value: 1]
-  @invalid_id [id: 1, value: 1]
+  @invalid_one [id: "1", timestamp: 100]
+  @invalid_id [id: 1, timestamp: 100]
 
   defp create_zero(_), do: [zero: fixture(@zero)]
   defp create_one(_), do: [one: fixture(@one)]
   defp create_two(_), do: [two: fixture(@two)]
   defp create_zero_dup(_), do: [zero_dup: fixture(@zero_dup)]
-  # defp create_three(_), do: [three: fixture(@three)]
-  # defp create_four(_), do: [four: fixture(@four)]
 
   defp fixture(data), do: struct(TestData, data) |> TestKeyspace.insert!()
 
@@ -156,26 +156,26 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "update valid data", %{zero: zero} do
-      changeset = Changeset.change(zero, value: "new zero")
-      expectation = %{zero | value: "new zero"}
+      changeset = Changeset.change(zero, data: "zero")
+      expectation = %{zero | data: "zero"}
       assert schema_equal(TestKeyspace.update(changeset), {:ok, expectation})
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
 
     test "update! valid data", %{zero: zero} do
-      changeset = Changeset.change(zero, value: "new zero")
-      expectation = %{zero | value: "new zero"}
+      changeset = Changeset.change(zero, data: "zero")
+      expectation = %{zero | data: "zero"}
       assert schema_equal(TestKeyspace.update!(changeset), expectation)
       assert schema_equal(TestKeyspace.get(TestData, id: "0"), expectation)
     end
 
     test "update invalid data", %{zero: zero} do
-      changeset = Changeset.change(zero, value: 1)
+      changeset = Changeset.change(zero, timestamp: 1)
       assert {:error, %Ecto.ChangeError{}} = TestKeyspace.update(changeset)
     end
 
     test "update! invalid data", %{zero: zero} do
-      changeset = Changeset.change(zero, value: 1)
+      changeset = Changeset.change(zero, timestamp: 1)
       assert_raise(Ecto.ChangeError, fn -> TestKeyspace.update!(changeset) end)
     end
 
@@ -248,18 +248,18 @@ defmodule Cassandrax.KeyspaceTest do
 
       two = TestKeyspace.get(TestData, id: "2")
       assert two.id == expectation.id
-      assert two.value == expectation.value
+      assert two.timestamp == expectation.timestamp
       assert two.svalue == expectation.svalue
     end
 
     test "duplicate key insert" do
-      expectation = %{struct(TestData, @two) | value: "new two"}
+      expectation = %{struct(TestData, @two) | timestamp: "02:05"}
 
       TestKeyspace.batch(fn batch -> TestKeyspace.batch_insert(batch, expectation) end)
 
       result = TestData |> where(id: "2") |> TestKeyspace.one()
       assert result.id == expectation.id
-      assert result.value == expectation.value
+      assert result.timestamp == expectation.timestamp
       assert result.svalue == expectation.svalue
     end
 
@@ -281,8 +281,8 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "single update", %{zero: zero} do
-      changeset = TestKeyspace.get(TestData, id: "0") |> Changeset.change(value: "new zero")
-      expectation = %{zero | value: "new zero"}
+      changeset = TestKeyspace.get(TestData, id: "0") |> Changeset.change(data: "zero")
+      expectation = %{zero | data: "zero"}
 
       TestKeyspace.batch(fn batch ->
         batch
@@ -294,10 +294,10 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "multiple updates", %{zero: zero, one: one} do
-      changeset1 = TestKeyspace.get(TestData, id: "0") |> Changeset.change(value: "new zero")
-      expectation1 = %TestData{zero | value: "new zero"}
-      changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
-      expectation2 = %TestData{one | value: "new one"}
+      changeset1 = TestKeyspace.get(TestData, id: "0") |> Changeset.change(data: "zero")
+      expectation1 = %TestData{zero | data: "zero"}
+      changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(data: "one")
+      expectation2 = %TestData{one | data: "one"}
 
       TestKeyspace.batch(fn batch ->
         batch
@@ -309,9 +309,10 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "update scalar data of the same records" do
-      changeset1 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
-      changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "last one")
-      changeset3 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "one last one")
+      changeset1 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(data: "new one")
+      changeset2 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(data: "last one")
+      changeset3 = TestKeyspace.get(TestData, id: "1") |> Changeset.change(data: "one last one")
+
       expectation = ["new one", "last one", "one last one"]
 
       TestKeyspace.batch(fn batch ->
@@ -322,7 +323,7 @@ defmodule Cassandrax.KeyspaceTest do
       end)
 
       result = TestData |> where(id: "1") |> TestKeyspace.one()
-      assert result.value in expectation
+      assert result.data in expectation
     end
 
     test "update set data of the same records", %{one: one} do
@@ -371,8 +372,8 @@ defmodule Cassandrax.KeyspaceTest do
     test "insert and update", %{one: one} do
       four = struct(TestData, @four)
 
-      changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
-      expectation = %{one | value: "new one"}
+      changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(data: "one")
+      expectation = %{one | data: "one"}
 
       TestKeyspace.batch(fn batch ->
         batch
@@ -387,8 +388,8 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "delete then update", %{one: one} do
-      changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(value: "new one")
-      expectation = [one, %{one | value: "new one"}, nil]
+      changeset = TestKeyspace.get(TestData, id: "1") |> Changeset.change(data: "one")
+      expectation = [one, %{one | data: "one"}, nil]
 
       TestKeyspace.batch(fn batch ->
         batch
@@ -412,13 +413,13 @@ defmodule Cassandrax.KeyspaceTest do
       assert {:ok, _} = Cassandrax.cql(TestConn, statement)
 
       statement = [
-        "SELECT value FROM ",
+        "SELECT timestamp FROM ",
         "#{TestKeyspace.__keyspace__()}.test_data ",
         "WHERE id = '1'"
       ]
 
       {:ok, page} = Cassandrax.cql(TestConn, statement)
-      assert [%{"value" => "one"}] = Enum.to_list(page)
+      assert [%{"timestamp" => "01:00"}] = Enum.to_list(page)
     end
 
     test "invalid cql" do
@@ -433,13 +434,10 @@ defmodule Cassandrax.KeyspaceTest do
   describe "query expressions" do
     setup [:create_zero, :create_zero_dup, :create_one]
 
-    test "order by" do
-      query = TestData |> allow_filtering() |> where(id: "0") |> order_by([:value])
+    test "order by", %{zero: zero, zero_dup: zero_dup} do
+      query = TestData |> allow_filtering() |> where(id: "0") |> order_by([:timestamp])
 
-      assert  [
-        %TestData{id: "0", value: "dup zero"},
-        %TestData{id: "0", value: "zero"}
-      ] = TestKeyspace.all(query)
+      assert [^zero, ^zero_dup] = TestKeyspace.all(query)
     end
 
     test "distinct" do
