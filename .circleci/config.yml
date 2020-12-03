@@ -3,7 +3,7 @@
 # Check https://circleci.com/docs/2.0/language-elixir/ for more details
 version: 2
 jobs:
-  test:
+  build:
     docker:
       - image: circleci/elixir:1.9
       - image: cassandra
@@ -13,15 +13,7 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-      - run: mix deps.get
-      - run: mix test
-
-  build:
-    docker:
-      - image: circleci/elixir:1.9
-    working_directory: ~/repo
-    steps:
-      - checkout
       - run: mix local.rebar --force
       - run: mix local.hex --force
       - run: mix deps.get
+      - run: mix test
