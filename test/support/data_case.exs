@@ -13,8 +13,11 @@ defmodule Cassandrax.DataCase do
       end
 
       defp start_test_connection do
+        hostname = System.get_env("CASSANDRA_HOST") || "127.0.0.1"
+        port = System.get_env("CASSANDRA_PORT") || "9043"
+
         test_conn_attrs = [
-          nodes: ["127.0.0.1:9043"],
+          nodes: ["#{hostname}:#{port}"],
           username: "cassandra",
           password: "cassandra"
         ]
@@ -25,7 +28,7 @@ defmodule Cassandrax.DataCase do
       end
 
       # We need to wait for the connection to start executing statements
-      defp await_connected(cluster, statement, tries \\ 4, last_error \\ nil)
+      defp await_connected(cluster, statement, tries \\ 100, last_error \\ nil)
 
       defp await_connected(_cluster, _statement, 0, last_error) do
         raise(
