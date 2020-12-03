@@ -4,7 +4,7 @@ defmodule Cassandrax.Supervisor do
   use Supervisor
 
   @defaults [
-    timeout: 100,
+    timeout: 5_000,
     pool_size: 50,
     write_options: [consistency: :one],
     read_options: [consistency: :one]
@@ -12,7 +12,7 @@ defmodule Cassandrax.Supervisor do
 
   def child_spec(cluster_or_keyspace, config) do
     %{
-      id: __MODULE__,
+      id: make_ref(),
       start: {__MODULE__, :start_link, [cluster_or_keyspace, config]},
       type: :supervisor
     }

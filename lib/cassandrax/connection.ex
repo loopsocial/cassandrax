@@ -1,7 +1,5 @@
 defmodule Cassandrax.Connection do
-  def child_spec(opts) do
-    %{id: make_ref(), start: {Xandra.Cluster, :start_link, [opts]}}
-  end
+  def child_spec(opts), do: %{id: make_ref(), start: {Xandra.Cluster, :start_link, [opts]}}
 
   def all(keyspace, queryable) do
     select = select(queryable)
