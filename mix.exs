@@ -39,6 +39,7 @@ defmodule Cassandrax.MixProject do
     [
       {:xandra, "~> 0.13"},
       {:ecto, "~> 3.0"},
+      {:ecto_sql, "~> 3.0"},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
   end

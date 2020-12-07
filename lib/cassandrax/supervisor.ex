@@ -77,9 +77,12 @@ defmodule Cassandrax.Supervisor do
 
   ## Callbacks
 
+  @impl true
   def init({cluster_or_keyspace, config}) do
     {:ok, opts} = runtime_config(cluster_or_keyspace, config)
-    child_spec = Cassandrax.Connection.child_spec(opts)
-    Supervisor.init([child_spec], strategy: :one_for_one)
+
+    child_specs = [Cassandrax.Connection.child_spec(opts)]
+
+    Supervisor.init(child_specs, strategy: :one_for_one)
   end
 end

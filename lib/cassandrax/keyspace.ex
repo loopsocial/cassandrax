@@ -70,10 +70,29 @@ defmodule Cassandrax.Keyspace do
       def __keyspace__, do: @keyspace_name
       def __conn__, do: @conn_pool
 
-      ## Keyspace gains its own pool if option `conn_pool` was given
-      if @conn_pool == __MODULE__ do
-        def child_spec(_), do: Cassandrax.Supervisor.child_spec(__MODULE__, config())
+      # For migrations
+      def get_dynamic_repo, do: IO.inspect __MODULE__
+      def put_dynamic_repo(__MODULE__), do: __MODULE__
+      def put_dynamic_repo(_), do: raise "Cassandrax does not support dynamic keyspaces"
+      def __adapter__, do: Cassandrax.Adapter
+
+      use GenServer
+
+      def start_link(_) do
+        GenServer.start_link(__MODULE__, nil, name: __MODULE__)
       end
+
+      @impl true
+      def init(_) do
+        # definitely wrong
+        Ecto.Repo.Registry.associate(self(), {__adapter__(), __MODULE__})
+        {:ok, nil}
+      end
+
+      # ## Keyspace gains its own pool if option `conn_pool` was given
+      # if @conn_pool == __MODULE__ do
+      #   def child_spec(_), do: Cassandrax.Supervisor.child_spec(__MODULE__, config())
+      # end
 
       ## Schemas
 
