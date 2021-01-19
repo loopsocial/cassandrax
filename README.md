@@ -43,12 +43,12 @@ end
 Creating a keyspace.
 
 ```elixir
-> statement = """
->   CREATE KEYSPACE IF NOT EXISTS my_keyspace
->   WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}
-> """
-
-> Cassandrax.cql(Cassandrax.MyConn, statement)
+iex(1)> statement = """
+   CREATE KEYSPACE IF NOT EXISTS my_keyspace
+   WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1}
+ """
+...
+iex(2)> Cassandrax.cql(Cassandrax.MyConn, statement)
 {:ok,
  %Xandra.SchemaChange{
    effect: "CREATED",
@@ -61,16 +61,16 @@ Creating a keyspace.
 Creating a table in the Keyspace.
 
 ```elixir
-> statement = [
->   "CREATE TABLE IF NOT EXISTS ",
->   "my_keyspace.user(",
->   "id integer, ",
->   "user_name text, ",
->   "svalue set<text>, ",
->   "PRIMARY KEY (id))"
-> ]
+iex(3)> statement = [
+    "CREATE TABLE IF NOT EXISTS ",
+    "my_keyspace.user(",
+    "id integer, ",
+    "user_name text, ",
+    "svalue set<text>, ",
+    "PRIMARY KEY (id))"
+  ]
 
-> Cassandrax.cql(Cassandrax.MyConn, statement)
+iex(4)> Cassandrax.cql(Cassandrax.MyConn, statement)
 {:ok,
  %Xandra.SchemaChange{
    effect: "CREATED",
@@ -84,53 +84,53 @@ Creating a table in the Keyspace.
 Inserting data. 
 
 ```elixir
-> user =  %User{id: 1, user_name: "alice"}
+iex(5)> user =  %User{id: 1, user_name: "alice"}
 %User{id: 1, user_name: "alice"}
 
-> MyKeyspace.insert(user) 
+iex(6)> MyKeyspace.insert(user) 
 {:ok, %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 1, user_name: "alice"}}
 
-> MyKeyspace.insert!(user)
+iex(7)> MyKeyspace.insert!(user)
 %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 1, user_name: "alice"}
 ```
 
 Updating data.
 
 ```elixir
-> changeset = Changeset.change(user, user_name: "bob")
+iex(8)> changeset = Changeset.change(user, user_name: "bob")
 #Ecto.Changeset<changes: %{user_name: "bob"}, ...>
 
-> MyKeyspace.update(changeset)
+iex(9)> MyKeyspace.update(changeset)
 %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 1, user_name: "bob"}
 
-> MyKeyspace.update!(changeset)
+iex(10)> MyKeyspace.update!(changeset)
 %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 1, user_name: "bob"}
 ```
 
 Deleting data. 
 
 ```elixir
-> MyKeyspace.delete(user)
+iex(11)> MyKeyspace.delete(user)
 {:ok, %User{__meta__: #Ecto.Schema.Metadata<:deleted, "user">, id: 1, user_name: "bob"}}
 
-> MyKeyspace.delete!(user)
+iex(12)> MyKeyspace.delete!(user)
 %User{__meta__: #Ecto.Schema.Metadata<:deleted, "user">, id: 1, user_name: "bob"}
 ```
 
 Batch operations.
 
 ```elixir
-> user = %User{id: 1, user_name: "alice"}
+iex(13)> user = %User{id: 1, user_name: "alice"}
 %User{id: 1, user_name: "alice"}
 
-> changeset = MyKeyspace.get(User, id: 2) |> Changeset.change(user_name: "eve")
+iex(14)> changeset = MyKeyspace.get(User, id: 2) |> Changeset.change(user_name: "eve")
 #Ecto.Changeset<changes: %{user_name: "eve", ...}>
 
-> MyKeyspace.batch(fn batch ->
->   batch
->   |> MyKeyspace.batch_insert(user)
->   |> MyKeyspace.batch_update(changeset)
-> end)
+iex(15)> MyKeyspace.batch(fn batch ->
+  batch
+  |> MyKeyspace.batch_insert(user)
+  |> MyKeyspace.batch_update(changeset)
+ end)
 :ok
 ```
 
@@ -138,13 +138,13 @@ Querying data.
 
 Get records.
 ```elixir
-> MyKeyspace.get(User, id: 1)
+iex(16)> MyKeyspace.get(User, id: 1)
 %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 1, user_name: "alice"}
 ```
 
 Get all records.
 ```elixir
-> MyKeyspace.all(User)
+iex(17)> MyKeyspace.all(User)
 [
   %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 1, user_name: "alice"},
   %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 2, user_name: "eve"},
@@ -155,6 +155,6 @@ Get all records.
 Get one record.
 
 ```elixir
-> User |> where(id: 1) |> MyKeyspace.one()
+iex(18)> User |> where(id: 1) |> MyKeyspace.one()
 %User{__meta__: #Ecto.Schema.Metadata<:loaded, "user">, id: 1, user_name: "alice"}
 ```
