@@ -39,8 +39,9 @@ defmodule Cassandrax.Query do
   Selects the fields from the schema and any transformations that should be performed on the fields.
   Any expression that is accepted in a query can be a select field.
 
-  Allows a list, tuple or a map. A full schema can also be selected. Only one select expression allowed in a query.
-  If there is no select expression, the full schema will be selected by default.
+  Allows a list, tuple or a map. A full schema can also be selected. Only one select expression
+  allowed in a query.  If there is no select expression, the full schema will be selected by
+  default.
 
   Accepts a list of atoms where atoms refer to fields.
 
@@ -134,7 +135,7 @@ defmodule Cassandrax.Query do
   ```
   """
   @callback group_by(queryable :: Cassandrax.Queryable.t(), order_by :: Keyword.t()) ::
-  Cassandrax.Query.t()
+              Cassandrax.Query.t()
 
   @doc """
   A distinct query expression.

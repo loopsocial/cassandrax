@@ -28,11 +28,11 @@ defmodule Cassandrax.Schema do
   Defines an embedded schema for the Cassandra table with the given field definitions.
 
   In order to create a schema, you must define a `@primary_key` before the schema definition.
-  Unlike `Ecto.Schema`, `Cassandrax.Schema` won't automatically generate a primary key which is named `id`.
-  `@primary_key` configures the schema primary key and it expects a list of key(s).
+  Unlike `Ecto.Schema`, `Cassandrax.Schema` won't automatically generate a primary key which is
+  named `id`.  `@primary_key` configures the schema primary key and it expects a list of key(s).
   You can set a single primary key which is the partition key in Cassandra or a list of keys
-  where the first key is the partition key and the rest are the clustering keys which are responsible
-  for sorting data within the partition.
+  where the first key is the partition key and the rest are the clustering keys which are
+  responsible for sorting data within the partition.
 
   You can use Ecto's schema to leverage field definitions and metadata.
 
