@@ -12,6 +12,7 @@ defmodule Cassandrax.Keyspace.Batch do
     Xandra.Cluster.run(keyspace.__conn__, fn conn ->
       xandra_batch = Xandra.Batch.new(type)
       batch = %Cassandrax.Keyspace.Batch{conn: conn, xandra_batch: xandra_batch} |> fun.()
+      opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
       case Cassandrax.Connection.execute(batch, opts) do
         {:ok, %Xandra.Void{}} -> :ok

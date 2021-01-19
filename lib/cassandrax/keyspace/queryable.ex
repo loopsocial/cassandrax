@@ -7,6 +7,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   """
   def all(keyspace, queryable, opts) when is_list(opts) do
     conn = keyspace.__conn__
+    opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
     queryable = Cassandrax.Queryable.to_query(queryable)
 
     {statement, values} = Cassandrax.Connection.all(keyspace, queryable)
