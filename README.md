@@ -213,8 +213,8 @@ API, so it is still unstable and can change in any version prior to `0.1.0`
 # Remember when filtering data by non-primary key fields, you should use ALLOW FILTERING:
 iex(20)> UserById
   |> where(id: 3)
-  |> where(user_name == "adam")
-  |> where(age >= 30)
+  |> where(:user_name == "adam")
+  |> where(:age >= 30)
   |> allow_filtering()
 %UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 3, user_name: "adam", age: 31}}
 ```
