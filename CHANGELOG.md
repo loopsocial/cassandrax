@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.3
+
+### Documentation
+
+  * Improved README documentation and examples
+
+### Bugfixes
+
+  * [Cassandrax.Keyspace] Fixed reads and batches not using default configs
+
 ## v0.0.2
 
 ### Documentation

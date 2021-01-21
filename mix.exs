@@ -1,7 +1,7 @@
 defmodule Cassandrax.MixProject do
   use Mix.Project
 
-  @version "0.0.2"
+  @version "0.0.3"
   @url "https://github.com/loopsocial/cassandrax"
   @maintainers ["Thiago Dias", "Doga Tuncay"]
 
