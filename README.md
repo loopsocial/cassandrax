@@ -138,10 +138,10 @@ iex(5)> user =  %UserById{id: 1, user_name: "alice"}
 %UserById{id: 1, user_name: "alice"}
 
 iex(6)> MyKeyspace.insert(user) 
-{:ok, %UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 1, user_name: "alice"}}
+{:ok, %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"}}
 
 iex(7)> MyKeyspace.insert!(user)
-%UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 1, user_name: "alice"}
+%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"}
 ```
 
 #### Update
@@ -150,19 +150,19 @@ iex(8)> changeset = Changeset.change(user, user_name: "bob")
 #Ecto.Changeset<changes: %{user_name: "bob"}, ...>
 
 iex(9)> MyKeyspace.update(changeset)
-%UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 1, user_name: "bob"}
+{:ok, %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "bob"}}
 
 iex(10)> MyKeyspace.update!(changeset)
-%UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 1, user_name: "bob"}
+%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "bob"}
 ```
 
 #### Delete
 ```elixir
 iex(11)> MyKeyspace.delete(user)
-{:ok, %UserById{__meta__: #Ecto.Schema.Metadata<:deleted, "user_by_id">, id: 1, user_name: "bob"}}
+{:ok, %UserById{__meta__: %Ecto.Schema.Metadata{:deleted, "user_by_id"}, id: 1, user_name: "bob"}}
 
 iex(12)> MyKeyspace.delete!(user)
-%UserById{__meta__: #Ecto.Schema.Metadata<:deleted, "user_by_id">, id: 1, user_name: "bob"}
+%UserById{__meta__: %Ecto.Schema.Metadata{:deleted, "user_by_id"}, id: 1, user_name: "bob"}
 ```
 
 #### Batch operations
@@ -189,12 +189,12 @@ and `one` functions directly from your Keyspace module.
 
 ```elixir
 iex(16)> MyKeyspace.get(UserById, id: 1)
-%UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 1, user_name: "alice"}
+%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"}
 
 iex(17)> MyKeyspace.all(UserById)
 [
-  %UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 1, user_name: "alice"},
-  %UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 2, user_name: "eve"},
+  %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"},
+  %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 2, user_name: "eve"},
   ...
 ]
 
@@ -202,7 +202,7 @@ iex(18)> import Cassandrax.Query
 true
 
 iex(19)> UserById |> where(id: 1) |> MyKeyspace.one()
-%UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 1, user_name: "alice"}
+%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"}
 ```
 
 Also, as described in the last query above, you can use `Cassandrax.Query`
@@ -216,5 +216,5 @@ iex(20)> UserById
   |> where(:user_name == "adam")
   |> where(:age >= 30)
   |> allow_filtering()
-%UserById{__meta__: #Ecto.Schema.Metadata<:loaded, "user_by_id">, id: 3, user_name: "adam", age: 31}}
+%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 3, user_name: "adam", age: 31}}
 ```
