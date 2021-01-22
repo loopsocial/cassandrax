@@ -216,5 +216,6 @@ iex(20)> UserById
   |> where(:user_name == "adam")
   |> where(:age >= 30)
   |> allow_filtering()
-%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 3, user_name: "adam", age: 31}}
+  |> MyKeyspace.all()
+[%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 3, user_name: "adam", age: 31}}]
 ```
