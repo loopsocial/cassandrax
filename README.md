@@ -1,9 +1,9 @@
 # Cassandrax
 
-Cassandrax is a Cassandra ORM built on top of [Xandra](https://github.com/lexhide/xandra) library
-and [Ecto](https://github.com/elixir-ecto/ecto) data mapping.
+Cassandrax is a Cassandra data mapping toolkit built on top of [Ecto](https://github.com/elixir-ecto/ecto)
+and query builder and runner on top of [Xandra](https://github.com/lexhide/xandra).
 
-Cassandrax is inspired by the [Triton](https://github.com/blitzstudios/triton) and
+Cassandrax is heavily inspired by the [Triton](https://github.com/blitzstudios/triton) and
 [Ecto](https://github.com/elixir-ecto/ecto) projects. It allows you to build and run CQL statements
 as well as map results to Elixir structs.
 
