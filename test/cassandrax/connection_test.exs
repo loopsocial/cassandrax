@@ -102,6 +102,20 @@ defmodule Cassandrax.ConnectionTest do
       assert all(queryable) =~ ~r/WHERE \("id" IN \?\)/
     end
 
+    test "defined keyword where clause with list as variable" do
+      list = ["abc123", "def456"]
+      queryable = TestSchema |> where(id: list)
+      assert all(queryable) =~ ~r/WHERE \("id" IN \?\)/
+    end
+
+    test "defined keyword where clause with multipe values as variables" do
+      id = 1
+      order_id = 2
+      queryable = TestSchema |> where(id: id) |> where(order_id: order_id)
+
+      assert all(queryable) =~ ~r/WHERE \("order_id" = \?\) AND \("id" = \?\)/
+    end
+
     @tag :pending
     test "defined where clause with contains operators" do
       # queryable = TestSchema |> where(:list contains "abc123") |> where(:map contains_key "def456")

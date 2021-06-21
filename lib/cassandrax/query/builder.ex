@@ -14,6 +14,14 @@ defmodule Cassandrax.Query.Builder do
     end
   end
 
+  def build(type, queryable, [{_, value}] = expression) when is_tuple(value) do
+    quote do
+      query = Cassandrax.Queryable.to_query(unquote(queryable))
+      fragment = Cassandrax.Query.Builder.build_fragment(unquote(type), unquote(expression))
+      Cassandrax.Query.Builder.add_fragment(unquote(type), fragment, query)
+    end
+  end
+
   def build(type, queryable, value) do
     fragment = build_fragment(type, value)
 
