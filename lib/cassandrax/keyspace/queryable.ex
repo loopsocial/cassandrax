@@ -1,5 +1,8 @@
 defmodule Cassandrax.Keyspace.Queryable do
   @moduledoc false
+
+  alias Cassandrax.{Query, Queryable}
+
   require Cassandrax.Query
 
   @doc """
@@ -8,7 +11,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   def all(keyspace, queryable, opts) when is_list(opts) do
     conn = keyspace.__conn__
     opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
-    queryable = Cassandrax.Queryable.to_query(queryable)
+    queryable = Queryable.to_query(queryable)
 
     {statement, values} = Cassandrax.Connection.all(keyspace, queryable)
 
@@ -53,7 +56,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   end
 
   defp query_for_get(queryable, primary_key) when is_list(primary_key) do
-    query = Cassandrax.Queryable.to_query(queryable)
+    query = Queryable.to_query(queryable)
     %{allow_filtering: allow_filtering} = query
     schema = assert_schema!(query)
 
@@ -62,8 +65,10 @@ defmodule Cassandrax.Keyspace.Queryable do
 
     partition_filters = filters_for_partition(allow_filtering, partition_keys, partition_filters)
     other_filters = filters_for_others(allow_filtering, clustering_keys, other_filters)
+
     filters = Keyword.merge(partition_filters, other_filters)
-    Cassandrax.Query.where(query, ^filters)
+
+    Query.where(query, ^filters)
   end
 
   defp query_for_get(_queryable, value) do
@@ -90,7 +95,9 @@ defmodule Cassandrax.Keyspace.Queryable do
 
   defp filters_for_others(true, _clustering_keys, filters), do: filters
 
-  defp filters_for_others(false, clustering_keys, filters) do
+  defp filters_for_others(false, [], filters), do: filters
+
+  defp filters_for_others(false, [clustering_keys], filters) do
     for {clustering_key, value} <- filters, into: [] do
       unless Enum.member?(clustering_keys, clustering_key) do
         raise ArgumentError,
@@ -102,7 +109,7 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
-  defp assert_schema!(%Cassandrax.Query{schema: schema}), do: schema
+  defp assert_schema!(%Query{schema: schema}), do: schema
 
   defp assert_schema!(query),
     do:

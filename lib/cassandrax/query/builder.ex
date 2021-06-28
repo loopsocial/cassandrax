@@ -44,16 +44,32 @@ defmodule Cassandrax.Query.Builder do
     # :contains_key
   ]
 
-  def build_fragment(:where, {operator, _, [field, value]}) when operator in @allowed_operators,
-    do: [field, operator, value]
+  def build_fragment(:where, {operator, _, [field, value]}) when operator in @allowed_operators do
+    [field, operator, value]
+  end
 
-  def build_fragment(:where, [{field, value}]) when is_list(value), do: [field, :in, value]
-  def build_fragment(:where, [{field, value}]), do: [field, :==, value]
+  def build_fragment(:where, [{field, value}]) when is_list(value) do
+    [field, :in, value]
+  end
+
+  def build_fragment(:where, [{field, value}]) do
+    [field, :==, value]
+  end
+
+  def build_fragment(:where, conditions) when is_list(conditions) do
+    Enum.map(conditions, &build_fragment(:where, [&1]))
+  end
+
   def build_fragment(_type, value), do: value
 
-  def add_fragment(:where, filter, query) do
-    %{query | wheres: [filter | query.wheres]}
-  end
+  def add_fragment(:where, [], query), do: query
+
+  def add_fragment(:where, [field, operator, _] = filter, query)
+      when is_atom(field) and is_atom(operator),
+      do: %{query | wheres: [filter | query.wheres]}
+
+  def add_fragment(:where, [filter | filters], query),
+    do: add_fragment(:where, filters, add_fragment(:where, filter, query))
 
   def add_fragment(type, value, query), do: %{query | type => value}
 end
