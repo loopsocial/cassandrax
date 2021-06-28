@@ -1,11 +1,12 @@
 # Cassandrax
 
-Cassandrax is a Cassandra data mapping toolkit built on top of [Ecto](https://github.com/elixir-ecto/ecto)
+Cassandrax is a Cassandra data mapping toolkit built on top of
+[Ecto](https://github.com/elixir-ecto/ecto)
 and query builder and runner on top of [Xandra](https://github.com/lexhide/xandra).
 
 Cassandrax is heavily inspired by the [Triton](https://github.com/blitzstudios/triton) and
-[Ecto](https://github.com/elixir-ecto/ecto) projects. It allows you to build and run CQL statements
-as well as map results to Elixir structs.
+[Ecto](https://github.com/elixir-ecto/ecto) projects. It allows you to build
+and run CQL statements as well as map results to Elixir structs.
 
 The docs can be found at [https://hexdocs.pm/cassandrax](https://hexdocs.pm/cassandrax).
 
@@ -14,7 +15,7 @@ The docs can be found at [https://hexdocs.pm/cassandrax](https://hexdocs.pm/cass
 ```elixir
 def deps do
   [
-    {:cassandrax, "~> 0.0.3"}
+    {:cassandrax, "~> 0.0.4"}
   ]
 end
 ```
@@ -28,6 +29,7 @@ test_conn_attrs = [
   password: "cassandra"
 ]
 
+# MyApp.MyCluster is just an atom
 child = Cassandrax.Supervisor.child_spec(MyApp.MyCluster, test_conn_attrs)
 Cassandrax.start_link([child])
 ```
@@ -167,6 +169,10 @@ iex(12)> MyKeyspace.delete!(user)
 
 #### Batch operations
 
+You can issue many operation at once with a `BATCH` operation. For more
+information on how Batches work in Cassandra DB, please refer to [CassandraDB
+Batches](https://cassandra.apache.org/doc/latest/cql/dml.html#batch).
+
 ```elixir
 iex(13)> user = %UserById{id: 1, user_name: "alice"}
 %UserById{id: 1, user_name: "alice"}
@@ -184,12 +190,19 @@ iex(15)> MyKeyspace.batch(fn batch ->
 
 #### Querying
 
-`Cassandrax` queries are very similar to `Ecto`'s, you can use the `all`, `get`
-and `one` functions directly from your Keyspace module.
+##### Disclaimer
+> One thing to keep in mind when it comes to querying is the API is still under
+development and, therefore, can still change in version prior to `0.1.0`.
+>
+> If you use it in production, be cautious when updating `cassandrax`, and make
+sure all your queries work correctly after installing the new version.
+
+`Cassandrax` queries are very similar to `Ecto`'s, you can use the `all/2`, `get/2`
+and `one/2` functions directly from your Keyspace module.
 
 ```elixir
-iex(16)> MyKeyspace.get(UserById, id: 1)
-%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"}
+iex(16)> MyKeyspace.get(UserById, [id: 1, age: 20])
+%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, age: 20, user_name: "alice"}
 
 iex(17)> MyKeyspace.all(UserById)
 [
@@ -197,19 +210,17 @@ iex(17)> MyKeyspace.all(UserById)
   %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 2, user_name: "eve"},
   ...
 ]
+```
 
+Also, you can use `Cassandrax.Query` macros to build your own queries.
+
+```elixir
 iex(18)> import Cassandrax.Query
 true
 
-iex(19)> UserById |> where(id: 1) |> MyKeyspace.one()
-%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"}
-```
+iex(19)> UserById |> where(id: 1, age: 20) |> MyKeyspace.one()
+%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, age: 20, user_name: "alice"}
 
-Also, as described in the last query above, you can use `Cassandrax.Query`
-macros to build your own queries. Just keep in mind we're still working on the
-API, so it is still unstable and can change in any version prior to `0.1.0`
-
-```elixir
 # Remember when filtering data by non-primary key fields, you should use ALLOW FILTERING:
 iex(20)> UserById
   |> where(id: 3)
