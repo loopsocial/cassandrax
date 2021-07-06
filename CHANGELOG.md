@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.0.5
+
+### Bugfixes
+
+  * [Cassandrax.Connection] Fixed >= and <= operators, which were backwards in
+    the final query
+
 ## v0.0.4
 
 ### Documentation
