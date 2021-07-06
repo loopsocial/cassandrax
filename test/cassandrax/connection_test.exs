@@ -2,6 +2,8 @@ Code.require_file("../support/data_case.exs", __DIR__)
 
 defmodule Cassandrax.ConnectionTest do
   use Cassandrax.DataCase
+  import Cassandrax.Query
+  import Kernel, except: [to_string: 1]
 
   describe "child_spec/1" do
     assert %{start: {Xandra.Cluster, :start_link, ["options"]}} =
@@ -39,14 +41,10 @@ defmodule Cassandrax.ConnectionTest do
     end
   end
 
-  import Kernel, except: [to_string: 1]
   defp to_string({iodata, _values}), do: IO.iodata_to_binary(iodata)
+  defp all(queryable), do: Cassandrax.Connection.all(TestKeyspace, queryable) |> to_string()
 
   describe "all/2" do
-    import Cassandrax.Query
-
-    defp all(queryable), do: Cassandrax.Connection.all(TestKeyspace, queryable) |> to_string()
-
     test "defined fields to be selected" do
       queryable = TestSchema |> select([:id, :order_id, :map])
       assert all(queryable) =~ ~r/SELECT "id", "order_id", "map" FROM "test_keyspace"."my_table"/
@@ -120,6 +118,38 @@ defmodule Cassandrax.ConnectionTest do
     test "defined where clause with contains operators" do
       # queryable = TestSchema |> where(:list contains "abc123") |> where(:map contains_key "def456")
       # assert all(queryable) =~ ~r/WHERE \("map" CONTAINS KEY \?\) AND \("list" CONTAINS \?\)/
+    end
+  end
+
+  describe "all/2 with all operators" do
+    test "==" do
+      queryable = TestSchema |> where(:id == "abc123")
+      assert all(queryable) =~ ~r/WHERE \("id" = \?\)/
+    end
+
+    test "!=" do
+      queryable = TestSchema |> where(:id != "abc123")
+      assert all(queryable) =~ ~r/WHERE \("id" != \?\)/
+    end
+
+    test ">=" do
+      queryable = TestSchema |> where(:id >= "abc123")
+      assert all(queryable) =~ ~r/WHERE \("id" >= \?\)/
+    end
+
+    test "<=" do
+      queryable = TestSchema |> where(:id <= "abc123")
+      assert all(queryable) =~ ~r/WHERE \("id" <= \?\)/
+    end
+
+    test ">" do
+      queryable = TestSchema |> where(:id > "abc123")
+      assert all(queryable) =~ ~r/WHERE \("id" > \?\)/
+    end
+
+    test "<" do
+      queryable = TestSchema |> where(:id < "abc123")
+      assert all(queryable) =~ ~r/WHERE \("id" < \?\)/
     end
   end
 end
