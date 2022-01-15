@@ -33,6 +33,14 @@ defmodule Cassandrax.QueryTest do
       assert %Cassandrax.Query{wheres: [[:id, :==, 123]]} = query
     end
 
+    test "keyword syntax allows multiple filters" do
+      query = where(TestSchema, id: 123, field1: "abc", field2: false)
+
+      assert %Cassandrax.Query{
+               wheres: [[:field2, :==, false], [:field1, :==, "abc"], [:id, :==, 123]]
+             } = query
+    end
+
     test "operator syntax" do
       query = TestSchema |> where(:id == 123) |> where(:field1 <= "string")
 

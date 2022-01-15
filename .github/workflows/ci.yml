@@ -1,0 +1,53 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      cassandra:
+        image: cassandra
+        env:
+          HEAP_NEWSIZE: 1M
+          MAX_HEAP_SIZE: 200M
+        ports:
+        - 9043:9042
+
+    env:
+      MIX_ENV: test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              elixir: 1.12.3
+              otp: 24.0.6
+            lint: lint
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.pair.otp }}
+          elixir-version: ${{ matrix.pair.elixir }}
+
+      - name: Dependencies
+        run: mix deps.get
+
+      - name: Check Format
+        run: mix format --check-formatted
+        if: ${{ matrix.lint }}
+
+      - name: Check Unused Dependencies
+        run: mix deps.unlock --check-unused
+        if: ${{ matrix.lint }}
+
+      - name: Run Tests Without Coverage
+        run: mix test
