@@ -17,7 +17,10 @@ defmodule Cassandrax.DataCase do
         port = System.get_env("CASSANDRA_PORT") || "9043"
 
         test_conn_attrs = [
-          nodes: ["#{hostname}:#{port}"]
+          nodes: ["#{hostname}:#{port}"],
+          protocol_version: :v4,
+          username: "cassandra",
+          password: "cassandra"
         ]
 
         child = Cassandrax.Supervisor.child_spec(Cassandrax.TestConn, test_conn_attrs)
