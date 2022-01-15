@@ -12,14 +12,13 @@ jobs:
     services:
       cassandra:
         image: cassandra
-        env:
-          HEAP_NEWSIZE: 1M
-          MAX_HEAP_SIZE: 200M
         ports:
         - 9043:9042
+        options: --health-cmd "cqlsh --debug" --health-interval 5s --health-retries 10
 
     env:
       MIX_ENV: test
+      CASSANDRA_PORT: 9043
 
     strategy:
       fail-fast: false
@@ -49,5 +48,5 @@ jobs:
         run: mix deps.unlock --check-unused
         if: ${{ matrix.lint }}
 
-      - name: Run Tests Without Coverage
+      - name: Run Tests
         run: mix test

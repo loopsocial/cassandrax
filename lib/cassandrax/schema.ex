@@ -82,9 +82,7 @@ defmodule Cassandrax.Schema do
         if partition_key not in schema_fields do
           raise Cassandrax.SchemaError,
             message:
-              "@primary_key defines a partition key that wasn't defined in the schema: #{
-                inspect(partition_key)
-              }"
+              "@primary_key defines a partition key that wasn't defined in the schema: #{inspect(partition_key)}"
         end
 
         Module.put_attribute(__MODULE__, :partition_key, partition_key)
@@ -98,9 +96,7 @@ defmodule Cassandrax.Schema do
         if clustering_key not in schema_fields do
           raise Cassandrax.SchemaError,
             message:
-              "@primary_key defines a clustering key that wasn't defined in the schema: #{
-                inspect(clustering_key)
-              }"
+              "@primary_key defines a clustering key that wasn't defined in the schema: #{inspect(clustering_key)}"
         end
       end
 

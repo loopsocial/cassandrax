@@ -18,6 +18,7 @@ defmodule Cassandrax.DataCase do
 
         test_conn_attrs = [
           nodes: ["#{hostname}:#{port}"],
+          protocol_version: :v4,
           username: "cassandra",
           password: "cassandra"
         ]

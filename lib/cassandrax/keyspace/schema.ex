@@ -254,9 +254,7 @@ defmodule Cassandrax.Keyspace.Schema do
         {:error,
          %Ecto.ChangeError{
            message:
-             "value `#{inspect(value)}` for `#{inspect(schema)}`.`#{field}` does not match type #{
-               type
-             }"
+             "value `#{inspect(value)}` for `#{inspect(schema)}`.`#{field}` does not match type #{type}"
          }}
     end
   end
