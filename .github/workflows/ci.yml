@@ -13,11 +13,12 @@ jobs:
       cassandra:
         image: cassandra
         ports:
-        - 9042:9042
+        - 9043:9042
+        options: --health-cmd "cqlsh --debug" --health-interval 5s --health-retries 10
 
     env:
       MIX_ENV: test
-      CASSANDRA_PORT: 9042
+      CASSANDRA_PORT: 9043
 
     strategy:
       fail-fast: false
