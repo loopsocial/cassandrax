@@ -11,7 +11,9 @@ jobs:
 
     services:
       cassandra:
-        image: cassandra
+        build:
+          context: ./../../test/docker
+          dockerfile: cassandra.dockerfile
         env:
           HEAP_NEWSIZE: 1M
           MAX_HEAP_SIZE: 200M
@@ -49,5 +51,5 @@ jobs:
         run: mix deps.unlock --check-unused
         if: ${{ matrix.lint }}
 
-      - name: Run Tests Without Coverage
+      - name: Run Tests
         run: mix test
