@@ -1,4 +1,8 @@
 # Cassandrax
+=========
+
+[![CI](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml/badge.svg)](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/cassandrax.svg)](https://hex.pm/packages/cassandrax)
 
 Cassandrax is a Cassandra data mapping toolkit built on top of
 [Ecto](https://github.com/elixir-ecto/ecto)
