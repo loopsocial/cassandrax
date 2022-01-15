@@ -11,17 +11,13 @@ jobs:
 
     services:
       cassandra:
-        build:
-          context: ./../../test/docker
-          dockerfile: cassandra.dockerfile
-        env:
-          HEAP_NEWSIZE: 1M
-          MAX_HEAP_SIZE: 200M
+        image: cassandra
         ports:
-        - 9043:9042
+        - 9042:9042
 
     env:
       MIX_ENV: test
+      CASSANDRA_PORT: 9042
 
     strategy:
       fail-fast: false
