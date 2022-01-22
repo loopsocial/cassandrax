@@ -1,5 +1,4 @@
 # Cassandrax
-=========
 
 [![CI](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml/badge.svg)](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/cassandrax.svg)](https://hex.pm/packages/cassandrax)
@@ -19,7 +18,7 @@ The docs can be found at [https://hexdocs.pm/cassandrax](https://hexdocs.pm/cass
 ```elixir
 def deps do
   [
-    {:cassandrax, "~> 0.0.4"}
+    {:cassandrax, "~> 0.0.5"}
   ]
 end
 ```
