@@ -38,7 +38,7 @@ defmodule Cassandrax.MixProject do
   defp deps do
     [
       {:xandra, "~> 0.13"},
-      {:ecto, "~> 3.0"},
+      {:ecto, "~> 3.6"},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
   end
