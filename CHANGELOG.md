@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.0
+
+### Changes
+
+  * Make it compatible with latest version of
+    [ecto](https://github.com/elixir-ecto/ecto) (Thanks
+    [Tomoka64](https://github.com/Tomoka64))
+
 ## v0.0.5
 
 ### Bugfixes
