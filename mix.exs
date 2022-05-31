@@ -18,7 +18,8 @@ defmodule Cassandrax.MixProject do
 
       # Hexpm
       package: package(),
-      description: "An Elixir Cassandra ORM built on top of Xandra driver.",
+      description:
+        "A Cassandra data mapping built on top of Ecto and query runner on top of Xandra.",
 
       # Docs
       name: "Cassandrax",
