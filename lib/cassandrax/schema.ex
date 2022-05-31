@@ -76,7 +76,7 @@ defmodule Cassandrax.Schema do
       schema(unquote(source), do: unquote(block))
 
       # This fetches the defined fields within the schema
-      schema_fields = Keyword.keys(@changeset_fields)
+      schema_fields = Keyword.keys(@ecto_changeset_fields)
 
       for partition_key <- partition_keys do
         if partition_key not in schema_fields do
