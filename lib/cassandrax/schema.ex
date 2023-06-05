@@ -68,6 +68,7 @@ defmodule Cassandrax.Schema do
 
       def __schema__(:queryable), do: %Cassandrax.Query{from: unquote(source), schema: __MODULE__}
       def __schema__(:pk), do: @primary_key
+      def __cassandrax_source__, do: unquote(source)
 
       # Set it to false to bypass Ecto primary_key verification
       @primary_key false

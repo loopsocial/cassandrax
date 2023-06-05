@@ -95,6 +95,9 @@ defmodule Cassandrax.Keyspace do
       def delete!(struct, opts \\ []),
         do: Cassandrax.Keyspace.Schema.delete!(__MODULE__, struct, opts)
 
+      def truncate(module_or_table) when is_atom(module_or_table),
+        do: Cassandrax.Keyspace.Schema.truncate(__MODULE__, module_or_table)
+
       ## Queryable
 
       def all(queryable, opts \\ []),
@@ -255,6 +258,16 @@ defmodule Cassandrax.Keyspace do
               struct_or_changeset :: Ecto.Schema.t() | Ecto.Changeset.t(),
               opts :: Keyword.t()
             ) :: Cassandrax.Schema.t()
+
+  @doc """
+  Truncates a schema.
+
+  ## Example
+  ```
+  MyKeyspace.truncate(User)
+  ```
+  """
+  @callback truncate(module() | atom()) :: :ok
 
   @doc """
   Fetches all entries from the data store that matches the given query.

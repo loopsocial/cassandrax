@@ -42,6 +42,7 @@ defmodule Cassandrax.ConnectionTest do
   end
 
   defp to_string({iodata, _values}), do: IO.iodata_to_binary(iodata)
+  defp to_string(iodata), do: IO.iodata_to_binary(iodata)
   defp all(queryable), do: Cassandrax.Connection.all(TestKeyspace, queryable) |> to_string()
 
   describe "all/2" do
@@ -150,6 +151,20 @@ defmodule Cassandrax.ConnectionTest do
     test "<" do
       queryable = TestSchema |> where(:id < "abc123")
       assert all(queryable) =~ ~r/WHERE \("id" < \?\)/
+    end
+  end
+
+  defp truncate(queryable) do
+    changeset = Ecto.Changeset.change(queryable.__struct__)
+    schema = changeset.data.__struct__
+    keyspace_name = TestKeyspace.__keyspace__()
+    table = schema.__schema__(:source)
+    Cassandrax.Connection.truncate(keyspace_name, table) |> to_string()
+  end
+
+  describe "truncate" do
+    test "successfully generate a truncate clause when passed a schema" do
+      assert truncate(TestSchema) =~ ~r/TRUNCATE TABLE "test_keyspace"."my_table"/
     end
   end
 end

@@ -542,6 +542,48 @@ defmodule Cassandrax.KeyspaceTest do
     end
   end
 
+  describe "truncate" do
+    setup do
+      [
+        first: fixture(TestData, id: "0", timestamp: "00:00", data: "0"),
+        second:
+          fixture(TestData,
+            id: "1",
+            timestamp: "01:00",
+            data: "1",
+            svalue: MapSet.new(["one", "another one"])
+          )
+      ]
+    end
+
+    test "truncates all records on the table when passed module that uses Cassandrax.Schema" do
+      assert Enum.count(TestKeyspace.all(TestData)) == 2
+      assert {:ok, %Xandra.Void{}} = TestKeyspace.truncate(TestData)
+      assert Enum.count(TestKeyspace.all(TestData)) == 0
+    end
+
+    test "truncates all records on the table when passed valid table name" do
+      assert Enum.count(TestKeyspace.all(TestData)) == 2
+      assert {:ok, %Xandra.Void{}} = TestKeyspace.truncate(:test_data)
+      assert Enum.count(TestKeyspace.all(TestData)) == 0
+    end
+
+    test "returns error when passed invalid module" do
+      assert {:error, "module Elixir.String does not use Cassandrax.Schema"} =
+               TestKeyspace.truncate(String)
+    end
+
+    test "returns error when passed invalid table name" do
+      assert {:error,
+              %Xandra.Error{
+                __exception__: true,
+                message: "table test_data2 does not exist",
+                reason: :invalid,
+                warnings: []
+              }} = TestKeyspace.truncate(:test_data2)
+    end
+  end
+
   describe "cql" do
     setup do
       [

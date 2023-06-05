@@ -118,6 +118,8 @@ defmodule Cassandrax.Connection do
     ["DELETE FROM ", quote_table(keyspace, table), " WHERE " | filters]
   end
 
+  def truncate(keyspace, table), do: ["TRUNCATE TABLE ", quote_table(keyspace, table)]
+
   defp assemble_filters(filters) do
     intersperse_map(filters, " AND ", fn field ->
       field = field |> Atom.to_string() |> quote_name()
