@@ -142,25 +142,60 @@ defmodule Cassandrax do
   use Application
 
   def start(_type, _args) do
-    Application.get_env(:cassandrax, :clusters, [])
+    clusters()
     |> Enum.map(fn cluster ->
-      config = Application.get_env(:cassandrax, cluster) |> ensure_cluster_config!(cluster)
+      config = Application.get_env(:cassandrax, cluster)
+      ensure_cluster_config!(config, cluster)
       Cassandrax.Supervisor.child_spec(cluster, config)
     end)
     |> start_link()
+    |> wait_connection()
   end
 
-  def ensure_cluster_config!(empty, cluster) when is_nil(empty) or empty == [] do
-    raise(
-      Cassandrax.ClusterConfigError,
-      "Expected to find keyword configs for #{inspect(cluster)}, found #{inspect(empty)}"
-    )
+  defp clusters() do
+    Application.get_env(:cassandrax, :clusters, [])
   end
 
-  def ensure_cluster_config!(config, _cluster), do: config
+  def ensure_cluster_config!(empty, cluster) do
+    if is_nil(empty) or empty == [] do
+      msg = "Expected to find keyword configs for #{inspect(cluster)}, found #{inspect(empty)}"
+      raise(Cassandrax.ClusterConfigError, msg)
+    end
+  end
 
   def start_link(children) do
     Supervisor.start_link(children, strategy: :one_for_one, name: Cassandrax.Supervisor)
+  end
+
+  defp wait_connection(startup) do
+    case startup do
+      {:ok, _supervisor} ->
+        retries = Application.get_env(:cassandrax, :retries, 10)
+        interval = Application.get_env(:cassandrax, :interval, 100)
+        wait_connection(clusters(), retries, interval)
+        startup
+
+      error ->
+        error
+    end
+  end
+
+  defp wait_connection([], _retries, _interval), do: :ok
+
+  defp wait_connection([cluster | clusters], retries, interval) do
+    case GenServer.call(cluster, :checkout) do
+      {:ok, _pool} ->
+        wait_connection(clusters, retries, interval)
+
+      {:error, _reason} ->
+        if retries == 0 do
+          msg = "Cannot connect to #{inspect(cluster)}"
+          raise(Cassandrax.ConnectionError, msg)
+        else
+          :timer.sleep(interval)
+          wait_connection([cluster | clusters], retries - 1, interval)
+        end
+    end
   end
 
   def cql(conn, statement, values \\ [], opts \\ []) do
