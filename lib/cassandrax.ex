@@ -145,7 +145,7 @@ defmodule Cassandrax do
     clusters()
     |> Enum.map(fn cluster ->
       config = Application.get_env(:cassandrax, cluster)
-      ensure_cluster_config!(cluster)
+      ensure_cluster_config!(config, cluster)
       Cassandrax.Supervisor.child_spec(cluster, config)
     end)
     |> start_link()
