@@ -144,7 +144,8 @@ defmodule Cassandrax do
   def start(_type, _args) do
     clusters()
     |> Enum.map(fn cluster ->
-      config = Application.fetch_env!(:cassandrax, cluster)
+      config = Application.get_env(:cassandrax, cluster)
+      ensure_cluster_config!(cluster)
       Cassandrax.Supervisor.child_spec(cluster, config)
     end)
     |> start_link()
@@ -153,6 +154,13 @@ defmodule Cassandrax do
 
   defp clusters() do
     Application.get_env(:cassandrax, :clusters, [])
+  end
+
+  def ensure_cluster_config!(empty, cluster) do
+    if is_nil(empty) or empty == [] do
+      msg = "Expected to find keyword configs for #{inspect(cluster)}, found #{inspect(empty)}"
+      raise(Cassandrax.ClusterConfigError, msg)
+    end
   end
 
   def start_link(children) do
