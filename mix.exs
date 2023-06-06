@@ -25,7 +25,7 @@ defmodule Cassandrax.MixProject do
       name: "Cassandrax",
       source_url: @url,
       homepage_url: "https://hexdocs.pm/cassandrax",
-      docs: [main: "readme", extras: ["README.md"]]
+      docs: [main: "Cassandrax", extras: ["README.md"]]
     ]
   end
 
