@@ -5,6 +5,13 @@ defmodule Cassandrax.ClusterConfigError do
   defexception [:message]
 end
 
+defmodule Cassandrax.ConnectionError do
+  @moduledoc """
+  Raised at startup when a cluster cannot connect, to prevent application initialization when cassandrax isn't available
+  """
+  defexception [:message]
+end
+
 defmodule Cassandrax.QueryError do
   @moduledoc """
   Raised at runtime when a query is invalid

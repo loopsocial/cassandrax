@@ -189,7 +189,8 @@ defmodule Cassandrax do
 
       {:error, _reason} ->
         if retries == 0 do
-          raise "Cannot connect to #{inspect(cluster)}"
+          msg = "Cannot connect to #{inspect(cluster)}"
+          raise(Cassandrax.ConnectionError, msg)
         else
           :timer.sleep(interval)
           wait_connection([cluster | clusters], retries - 1, interval)
