@@ -7,9 +7,17 @@ defmodule Cassandrax.DataCase do
   using do
     quote do
       setup_all do
+        # Test against the docker-compose.yml configuration
+        # Use ENV variables to test against another server
         hostname = System.get_env("CASSANDRA_HOST") || "127.0.0.1"
-        port = System.get_env("CASSANDRA_PORT") || "9042"
-        config = [nodes: ["#{hostname}:#{port}"], protocol_version: :v4]
+        port = System.get_env("CASSANDRA_PORT") || "9043"
+
+        config = [
+          nodes: ["#{hostname}:#{port}"],
+          protocol_version: :v4,
+          username: "cassandra",
+          password: "cassandra"
+        ]
 
         Application.put_env(:cassandrax, :clusters, [Cassandrax.TestConn])
         Application.put_env(:cassandrax, Cassandrax.TestConn, config)
