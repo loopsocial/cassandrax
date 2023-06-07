@@ -1,4 +1,4 @@
-# Cassandrax
+# README
 
 [![CI](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml/badge.svg)](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/cassandrax.svg)](https://hex.pm/packages/cassandrax)
@@ -125,15 +125,75 @@ iex(4)> Cassandrax.cql(MyApp.MyCluster, statement)
  }}
 ```
 
-Keep in mind that in order to use your current Ecto Repo migrations to run the above
-commands (always defining `up` and `down` functions separately), first you need to make
-sure `:cassandrax` is started before migrations are ran. To do that, edit your
-`config/config.exs` like so:
+### Migrations
+In future, we plan to support pure cassandrax migrations, but so far we still depend on Ecto to
+keep track of migrations. Below we present a strategy to keep cassandrax migrations separated
+from your main database migrations.
+
+Let's configure a new `Ecto.Repo` to put migrations on `priv/cassandrax_repo/migrations`:
 
 ```elixir
-config :my_app, MyApp.Repo, start_apps_before_migration: [:cassandrax]
+# Configure an additional Ecto.Repo
+config :my_app, MyApp.CassandraxRepo,
+  database: "same as your main database",
+  hostname: "localhost",
+  username: "username",
+  password: "password"
+
+config :my_app, MyApp.CassandraxRepo,
+  # ensure cassandrax connection is ready before the migration runs
+  start_apps_before_migration: [:cassandrax],
 ```
 
+Then create the additional `Ecto.Repo` pointing to a different table than `schema_migrations`,
+to not conflict with your main database migrations.
+
+```elixir
+defmodule MyApp.CassandraxRepo do
+  @moduledoc """
+  Keep track of versions for Cassandra migrations.
+  """
+  use Ecto.Repo,
+    otp_app: :repo,
+    adapter: Ecto.Adapters.Postgres,
+    migration_source: "cassandra_migrations"
+end
+```
+
+Now you can simply create a new migration with
+
+```
+mix ecto.gen.migration -r MyApp.CassandraxRepo create_first_table`
+```
+
+And edit the file
+
+```elixir
+defmodule Repo.Migrations.CreateFirstTable do
+  use Ecto.Migration
+  alias MyApp.MyCluster
+
+  def up do
+    statement = """
+      CREATE TABLE IF NOT EXISTS my_keyspace.user_by_id(
+      id int,
+      age int,
+      user_name varchar,
+      nicknames set<varchar>,
+      PRIMARY KEY (id, age))
+      """
+
+    {:ok, _result} = Cassandrax.cql(Cluster, statement)
+  end
+
+  def down do
+    statement = "DROP TABLE IF EXISTS my_keyspace.user_by_id"
+    {:ok, _result} = Cassandrax.cql(Cluster, statement)
+  end
+end
+```
+
+### CRUD
 Mutating data is as easy as it is with a regular Ecto schema. You can work
 straight with structs, or with changesets:
 
