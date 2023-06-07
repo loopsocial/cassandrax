@@ -1,4 +1,4 @@
-# README
+# Cassandrax
 
 [![CI](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml/badge.svg)](https://github.com/loopsocial/cassandrax/actions/workflows/ci.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/cassandrax.svg)](https://hex.pm/packages/cassandrax)
