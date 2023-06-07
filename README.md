@@ -193,6 +193,8 @@ defmodule Repo.Migrations.CreateFirstTable do
 end
 ```
 
+Also, remember to include `MyApp.CassandraxRepo` migrations on your deploy scripts!
+
 ### CRUD
 Mutating data is as easy as it is with a regular Ecto schema. You can work
 straight with structs, or with changesets:
