@@ -54,6 +54,22 @@ defmodule Cassandrax.Keyspace.Schema do
   end
 
   @doc """
+  Implementation for `Cassandrax.Keyspace.truncate/2`.
+  """
+  def truncate(keyspace, schema_module_or_table_name) do
+    conn = keyspace.__conn__
+    keyspace_name = keyspace.__keyspace__
+
+    with {:ok, table} <- table_name_from_module_or_atom(schema_module_or_table_name),
+         statement = Cassandrax.Connection.truncate(keyspace_name, table),
+         {:ok, results} <- Cassandrax.cql(conn, statement) do
+      {:ok, results}
+    else
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  @doc """
   Implementation for `Cassandrax.Keyspace.insert/2`.
   """
   def insert(keyspace, %Changeset{} = changeset, opts) do
@@ -256,6 +272,23 @@ defmodule Cassandrax.Keyspace.Schema do
            message:
              "value `#{inspect(value)}` for `#{inspect(schema)}`.`#{field}` does not match type #{type}"
          }}
+    end
+  end
+
+  defp table_name_from_module_or_atom(module_or_atom) do
+    is_module = function_exported?(module_or_atom, :__info__, 1)
+
+    if is_module do
+      is_cassandrax_schema =
+        Keyword.has_key?(module_or_atom.__info__(:functions), :__cassandrax_source__)
+
+      if is_cassandrax_schema do
+        {:ok, module_or_atom.__cassandrax_source__}
+      else
+        {:error, "module #{module_or_atom} does not use Cassandrax.Schema"}
+      end
+    else
+      {:ok, module_or_atom}
     end
   end
 end
