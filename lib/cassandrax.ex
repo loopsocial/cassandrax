@@ -45,7 +45,7 @@ defmodule Cassandrax do
   usually defined in your `config/config.exs`:
 
       config :cassandrax, clusters: [SomeCluster]
-      
+
       config :cassandrax, SomeCluster,
           protocol_version: :v4,
           nodes: ["127.0.0.1:9042"]

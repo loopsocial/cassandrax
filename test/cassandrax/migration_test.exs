@@ -1,5 +1,11 @@
 Code.require_file("../support/data_case.exs", __DIR__)
 
+# defmodule TestRepo do
+#   use Ecto.Repo,
+#     otp_app: Cassandrax,
+#     adapter: Cassandrax.Adapter
+# end
+
 defmodule TestData do
   use Cassandrax.Schema
 
@@ -38,7 +44,7 @@ defmodule TestMigrations.CreateTestData do
 end
 
 defmodule Cassandrax.KeyspaceTest do
-  use Cassandrax.DataCase
+  use ExUnit.Case, async: false
 
   setup do
     if Process.whereis(TestKeyspace) == nil do
