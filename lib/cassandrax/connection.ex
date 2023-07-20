@@ -70,7 +70,7 @@ defmodule Cassandrax.Connection do
   defp order_by(%{order_bys: []}), do: []
 
   defp order_by(%{order_bys: order_bys}) when is_list(order_bys) do
-    [" ORDER BY ", intersperse_map(order_bys, ", ", &quote_name(&1))]
+    [" ORDER BY ", intersperse_map(order_bys, ", ", &quote_order_name(&1))]
   end
 
   defp per_partition_limit(%{per_partition_limit: nil}), do: {[], []}
@@ -145,6 +145,11 @@ defmodule Cassandrax.Connection do
 
   defp quote_name(atom) when is_atom(atom), do: quote_name(Atom.to_string(atom))
   defp quote_name(string) when is_binary(string), do: [?", string, ?"]
+
+  defp quote_order_name({name, sort_order}),
+    do: [quote_name(name), " ", String.upcase(to_string(sort_order))]
+
+  defp quote_order_name(name), do: quote_name(name)
 
   defp quote_table(keyspace, table), do: [quote_name(keyspace), ?., quote_name(table)]
 
