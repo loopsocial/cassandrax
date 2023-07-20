@@ -65,6 +65,16 @@ defmodule Cassandrax.ConnectionTest do
       assert all(queryable) =~ ~r/ORDER BY "order_id"/
     end
 
+    test "defined order by clause with ASC sort order" do
+      queryable = TestSchema |> order_by(order_id: :asc)
+      assert all(queryable) =~ ~r/ORDER BY "order_id" ASC/
+    end
+
+    test "defined order by clause with DESC sort order" do
+      queryable = TestSchema |> order_by(order_id: :desc)
+      assert all(queryable) =~ ~r/ORDER BY "order_id" DESC/
+    end
+
     test "defined per partition limit clause" do
       queryable = TestSchema |> per_partition_limit(25)
       assert all(queryable) =~ ~r/PER PARTITION LIMIT \?/
