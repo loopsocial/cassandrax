@@ -204,4 +204,11 @@ defmodule Cassandrax do
       {:error, error} -> {:error, error}
     end
   end
+
+  def stream_cql(conn, statement, values \\ [], opts \\ []) do
+    case Cassandrax.Connection.prepare(conn, statement) do
+      {:ok, prepared} -> Cassandrax.Connection.stream_pages(conn, prepared, values, opts)
+      {:error, error} -> {:error, error}
+    end
+  end
 end

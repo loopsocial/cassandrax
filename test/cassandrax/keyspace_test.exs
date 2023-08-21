@@ -332,6 +332,30 @@ defmodule Cassandrax.KeyspaceTest do
     end
   end
 
+  describe "stream" do
+    setup do
+      [
+        first: fixture(TestData, id: "0", timestamp: "00:00", data: "0"),
+        second:
+          fixture(TestData,
+            id: "1",
+            timestamp: "01:00",
+            data: "1",
+            svalue: MapSet.new(["one", "another one"])
+          )
+      ]
+    end
+
+    test "stream", %{first: first, second: second} do
+      streamed_records =
+        TestData
+        |> TestKeyspace.stream(page_size: 1)
+        |> Enum.to_list()
+
+      assert list_sets_equal?(streamed_records, [first, second])
+    end
+  end
+
   describe "one" do
     test "fails on table with no entries" do
       assert TestKeyspace.one(TestData) == nil
