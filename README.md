@@ -295,3 +295,17 @@ iex(20)> UserById
   |> MyKeyspace.all()
 [%UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 3, user_name: "adam", age: 31}}]
 ```
+
+Streaming data is supported.
+
+```elixir
+iex(21)> users = MyKeyspace.stream(UserById, page_size: 20)
+#Function<59.58486609/2 in Stream.transform/3>
+
+iex(22) Emum.to_list(users)
+[
+  %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"},
+  %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 2, user_name: "eve"},
+  ...
+]
+```
