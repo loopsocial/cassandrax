@@ -168,12 +168,18 @@ defmodule Cassandrax do
   end
 
   defp wait_connection(startup) do
+    block_until_connection = Application.get_env(:cassandrax, :block_until_connection, true)
+
     case startup do
       {:ok, _supervisor} ->
-        retries = Application.get_env(:cassandrax, :retries, 10)
-        interval = Application.get_env(:cassandrax, :interval, 100)
-        wait_connection(clusters(), retries, interval)
-        startup
+        if block_until_connection do
+          retries = Application.get_env(:cassandrax, :retries, 10)
+          interval = Application.get_env(:cassandrax, :interval, 100)
+          wait_connection(clusters(), retries, interval)
+          startup
+        else
+          startup
+        end
 
       error ->
         error
