@@ -65,7 +65,7 @@ defmodule Cassandrax.ConnectionTest do
       assert all(queryable) =~ ~r/ORDER BY "order_id"/
     end
 
-    test "defined order by clause with explicit order" do
+    test "defined order by clause with an explicit order" do
       queryable = TestSchema |> order_by(desc: :order_id, asc: :field)
       assert all(queryable) =~ ~r/ORDER BY "order_id" DESC, "field" ASC/
     end
