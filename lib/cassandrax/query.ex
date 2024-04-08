@@ -119,6 +119,12 @@ defmodule Cassandrax.Query do
   ```
   query = User |> allow_filtering() |> where(:id == 1) |> order_by([:device_id])
   ```
+
+  You can set an explicit order.
+
+  ```
+  query = User |> allow_filtering() |> where(:id == 1) |> order_by([asc: :device_id])
+  ```
   """
   @callback order_by(queryable :: Cassandrax.Queryable.t(), order_by :: Keyword.t()) ::
               Cassandrax.Query.t()
