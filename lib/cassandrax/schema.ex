@@ -89,7 +89,9 @@ defmodule Cassandrax.Schema do
       end
 
       if @partition_key == [] do
-        raise(Cassandrax.SchemaError, message: "@primary_key cannot define an empty partition_key")
+        raise(Cassandrax.SchemaError,
+          message: "@primary_key cannot define an empty partition_key"
+        )
       end
 
       for clustering_key <- clustering_keys do
