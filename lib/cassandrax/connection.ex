@@ -70,8 +70,12 @@ defmodule Cassandrax.Connection do
   defp order_by(%{order_bys: []}), do: []
 
   defp order_by(%{order_bys: order_bys}) when is_list(order_bys) do
-    [" ORDER BY ", intersperse_map(order_bys, ", ", &quote_name(&1))]
+    [" ORDER BY ", intersperse_map(order_bys, ", ", &extract_order(&1))]
   end
+
+  defp extract_order({:asc, field}), do: [quote_name(field) | " ASC"]
+  defp extract_order({:desc, field}), do: [quote_name(field) | " DESC"]
+  defp extract_order(field), do: quote_name(field)
 
   defp per_partition_limit(%{per_partition_limit: nil}), do: {[], []}
 

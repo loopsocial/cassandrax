@@ -598,6 +598,18 @@ defmodule Cassandrax.KeyspaceTest do
       assert [^first, ^second] = TestKeyspace.all(query)
     end
 
+    test "order by asc", %{first: first, second: second} do
+      query = TestData |> allow_filtering() |> where(id: "0") |> order_by(asc: :timestamp)
+
+      assert [^first, ^second] = TestKeyspace.all(query)
+    end
+
+    test "order by desc", %{first: first, second: second} do
+      query = TestData |> allow_filtering() |> where(id: "0") |> order_by(desc: :timestamp)
+
+      assert [^second, ^first] = TestKeyspace.all(query)
+    end
+
     test "distinct" do
       query = TestData |> allow_filtering() |> distinct([:id])
       assert [%TestData{id: "0"}, %TestData{id: "1"}] = TestKeyspace.all(query)
