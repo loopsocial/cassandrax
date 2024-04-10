@@ -73,6 +73,10 @@ defmodule Cassandrax.Connection do
     [" ORDER BY ", intersperse_map(order_bys, ", ", &extract_order(&1))]
   end
 
+  defp extract_order({:asc, field}), do: [quote_name(field) | " ASC"]
+  defp extract_order({:desc, field}), do: [quote_name(field) | " DESC"]
+  defp extract_order(field), do: quote_name(field)
+
   defp per_partition_limit(%{per_partition_limit: nil}), do: {[], []}
 
   defp per_partition_limit(%{per_partition_limit: per_partition_limit}),
@@ -153,8 +157,4 @@ defmodule Cassandrax.Connection do
 
   defp do_intersperse_map([element | rest], separator, mapper),
     do: [mapper.(element), separator | do_intersperse_map(rest, separator, mapper)]
-
-  defp extract_order({:asc, field}), do: [quote_name(field) | " ASC"]
-  defp extract_order({:desc, field}), do: [quote_name(field) | " DESC"]
-  defp extract_order(field), do: quote_name(field)
 end
