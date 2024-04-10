@@ -100,6 +100,9 @@ defmodule Cassandrax.Keyspace do
       def all(queryable, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.all(__MODULE__, queryable, opts)
 
+      def stream(queryable, opts \\ []),
+        do: Cassandrax.Keyspace.Queryable.stream(__MODULE__, queryable, opts)
+
       def get(queryable, primary_key, opts \\ []) do
         Cassandrax.Keyspace.Queryable.get(__MODULE__, queryable, primary_key, opts)
       end
@@ -271,6 +274,20 @@ defmodule Cassandrax.Keyspace do
               Cassandrax.Schema.t()
             ]
 
+  @doc """
+  Streams all entries from the data store that matches the given query.
+
+  May raise Xandra.Error if query validation fails.
+
+  ## Example
+  ```
+  query = where(User, id: 1)
+  MyKeyspace.stream(query)
+  ```
+  """
+  @callback stream(queryable :: Cassandrax.Queryable.t(), opts :: Keyword.t()) :: [
+              Cassandrax.Schema.t()
+            ]
   @doc """
 
   ## Example

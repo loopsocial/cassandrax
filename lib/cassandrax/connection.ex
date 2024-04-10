@@ -147,6 +147,9 @@ defmodule Cassandrax.Connection do
   def execute(%Cassandrax.Keyspace.Batch{conn: conn, xandra_batch: xandra_batch}, opts),
     do: Xandra.execute(conn, xandra_batch, opts)
 
+  def stream_pages(conn, %Xandra.Prepared{} = prepared, values, opts),
+    do: Xandra.Cluster.stream_pages!(conn, prepared, values, opts)
+
   defp quote_name(atom) when is_atom(atom), do: quote_name(Atom.to_string(atom))
   defp quote_name(string) when is_binary(string), do: [?", string, ?"]
 

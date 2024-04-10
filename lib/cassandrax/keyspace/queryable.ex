@@ -31,6 +31,20 @@ defmodule Cassandrax.Keyspace.Queryable do
     do: %{struct | __meta__: %{meta | state: :loaded}}
 
   @doc """
+  Implementation for `Cassandrax.Keyspace.stream/2`.
+  """
+  def stream(keyspace, queryable, opts) when is_list(opts) do
+    conn = keyspace.__conn__
+    opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
+    queryable = Queryable.to_query(queryable)
+
+    with {statement, values} <- Cassandrax.Connection.all(keyspace, queryable),
+         page_stream <- Cassandrax.stream_cql(conn, statement, values, opts) do
+      Stream.flat_map(page_stream, fn page -> convert_results(queryable, page) end)
+    end
+  end
+
+  @doc """
   Implementation for `Cassandrax.Keyspace.get/3`.
   """
   def get(keyspace, queryable, primary_key, opts) when is_list(primary_key) do
