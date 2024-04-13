@@ -1,7 +1,7 @@
 defmodule Cassandrax.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.3.1"
   @url "https://github.com/loopsocial/cassandrax"
   @maintainers ["Thiago Dias", "Doga Tuncay"]
 
@@ -39,8 +39,8 @@ defmodule Cassandrax.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:xandra, "~> 0.14"},
-      {:ecto, "~> 3.8"},
+      {:xandra, "~> 0.17.0"},
+      {:ecto, "~> 3.9"},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
   end
