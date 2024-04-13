@@ -39,7 +39,7 @@ defmodule Cassandrax.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:xandra, "~> 0.14"},
+      {:xandra, "~> 0.17.0"},
       {:ecto, "~> 3.9"},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
