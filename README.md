@@ -18,7 +18,7 @@ The docs can be found at [https://hexdocs.pm/cassandrax](https://hexdocs.pm/cass
 ```elixir
 def deps do
   [
-    {:cassandrax, "~> 0.3.0"}
+    {:cassandrax, "~> 0.4.0"}
   ]
 end
 ```
