@@ -340,8 +340,8 @@ defmodule Cassandrax.KeyspaceTest do
     end
 
     test "raises on empty filter" do
-      msg = "cannot perform Cassandrax.Keyspace.delete_all/2 with an empty filter."
-      assert_raise(Cassandrax.QueryError, msg, fn -> TestKeyspace.delete_all(TestData) end)
+      msg = "cannot perform Cassandrax.Keyspace.delete_all/2 with an empty primary key"
+      assert_raise(ArgumentError, msg, fn -> TestKeyspace.delete_all(TestData) end)
     end
 
     test "deletes all entries that meet the filter requirement" do

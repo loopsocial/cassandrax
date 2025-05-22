@@ -27,14 +27,8 @@ defmodule Cassandrax.Keyspace.Queryable do
   def delete_all(keyspace, queryable, opts) when is_list(opts) do
     conn = keyspace.__conn__
     opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
-    queryable = Queryable.to_query(queryable)
-
-    if queryable.wheres == [] do
-      msg = "cannot perform Cassandrax.Keyspace.delete_all/2 with an empty filter."
-      raise(Cassandrax.QueryError, message: msg)
-    end
-
-    {statement, values} = Cassandrax.Connection.delete_all(keyspace, queryable)
+    query = build_query_for_delete_all(queryable)
+    {statement, values} = Cassandrax.Connection.delete_all(keyspace, query)
 
     case Cassandrax.cql(conn, statement, values, opts) do
       {:ok, _} -> :ok
@@ -69,7 +63,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   Implementation for `Cassandrax.Keyspace.get/3`.
   """
   def get(keyspace, queryable, primary_key, opts) when is_list(primary_key) do
-    one(keyspace, query_for_get(queryable, primary_key), opts)
+    one(keyspace, build_query_for_get(queryable, primary_key), opts)
   end
 
   def get(keyspace, queryable, primary_key, opts) when is_map(primary_key),
@@ -86,12 +80,25 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
-  defp query_for_get(_queryable, empty) when is_nil(empty) or empty == [] do
-    raise ArgumentError, "cannot perform Cassandrax.Keyspace.get/2 with an empty primary key"
+  defp build_query_for_delete_all(queryable) do
+    query = Queryable.to_query(queryable)
+
+    filters_input =
+      List.foldr(query.wheres, [], fn [key, operator, value], acc ->
+        if operator == :==, do: [{key, value} | acc], else: acc
+      end)
+
+    build_query_for_function(:delete_all, %{query | wheres: []}, filters_input)
   end
 
-  defp query_for_get(queryable, primary_key) when is_list(primary_key) do
-    query = Queryable.to_query(queryable)
+  defp build_query_for_get(queryable, primary_key),
+    do: build_query_for_function(:get, Queryable.to_query(queryable), primary_key)
+
+  defp build_query_for_function(action, _query, empty) when is_nil(empty) or empty == [] do
+    raise ArgumentError, "cannot perform #{function_name(action)} with an empty primary key"
+  end
+
+  defp build_query_for_function(_action, query, primary_key) when is_list(primary_key) do
     %{allow_filtering: allow_filtering} = query
     schema = assert_schema!(query)
 
@@ -106,9 +113,9 @@ defmodule Cassandrax.Keyspace.Queryable do
     Query.where(query, ^filters)
   end
 
-  defp query_for_get(_queryable, value) do
+  defp build_query_for_function(action, _query, value) do
     raise ArgumentError,
-          "Cassandrax.Keyspace.get/2 requires a Keyword primary_key, " <>
+          "#{function_name(action)} requires a Keyword primary_key, " <>
             "got: #{inspect(value)}"
   end
 
@@ -151,4 +158,7 @@ defmodule Cassandrax.Keyspace.Queryable do
       raise(Cassandrax.QueryError,
         message: "Expected a query with a schema, got: #{inspect(query)}"
       )
+
+  defp function_name(:get), do: "Cassandrax.Keyspace.get/2"
+  defp function_name(:delete_all), do: "Cassandrax.Keyspace.delete_all/2"
 end
