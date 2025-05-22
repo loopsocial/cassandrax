@@ -332,6 +332,33 @@ defmodule Cassandrax.KeyspaceTest do
     end
   end
 
+  describe "delete_all" do
+    setup do
+      fixture(TestData, id: "0", timestamp: "00:00", data: "1")
+      fixture(TestData, id: "1", timestamp: "01:00", data: "2")
+      :ok
+    end
+
+    test "raises on empty filter" do
+      msg = "cannot perform Cassandrax.Keyspace.delete_all/2 with an empty filter."
+      assert_raise(Cassandrax.QueryError, msg, fn -> TestKeyspace.delete_all(TestData) end)
+    end
+
+    test "deletes all entries that meet the filter requirement" do
+      func = fn ->
+        TestData
+        |> where(id: "0")
+        |> TestKeyspace.all()
+        |> length()
+      end
+
+      assert func.() == 1
+
+      TestData |> where(id: "0") |> TestKeyspace.delete_all()
+      assert func.() == 0
+    end
+  end
+
   describe "stream" do
     setup do
       [

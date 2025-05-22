@@ -21,6 +21,27 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
+  @doc """
+  Implementation for `Cassandrax.Keyspace.delete_all/2`.
+  """
+  def delete_all(keyspace, queryable, opts) when is_list(opts) do
+    conn = keyspace.__conn__
+    opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
+    queryable = Queryable.to_query(queryable)
+
+    if queryable.wheres == [] do
+      msg = "cannot perform Cassandrax.Keyspace.delete_all/2 with an empty filter."
+      raise(Cassandrax.QueryError, message: msg)
+    end
+
+    {statement, values} = Cassandrax.Connection.delete_all(keyspace, queryable)
+
+    case Cassandrax.cql(conn, statement, values, opts) do
+      {:ok, _} -> :ok
+      {:error, error} -> raise error
+    end
+  end
+
   defp convert_results(%{schema: schema}, results) do
     results
     |> Stream.map(&schema.convert/1)
