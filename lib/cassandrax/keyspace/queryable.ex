@@ -88,7 +88,7 @@ defmodule Cassandrax.Keyspace.Queryable do
         if operator == :==, do: [{key, value} | acc], else: acc
       end)
 
-    build_query_for_function(:delete_all, %{query | wheres: []}, filters_input)
+    build_query_for_function(:delete_all, query, filters_input)
   end
 
   defp build_query_for_get(queryable, primary_key),
@@ -109,8 +109,7 @@ defmodule Cassandrax.Keyspace.Queryable do
     other_filters = filters_for_others(allow_filtering, clustering_keys, other_filters)
 
     filters = Keyword.merge(partition_filters, other_filters)
-
-    Query.where(query, ^filters)
+    query |> Query.where(^filters) |> Map.update!(:wheres, &Enum.uniq/1)
   end
 
   defp build_query_for_function(action, _query, value) do
