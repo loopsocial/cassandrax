@@ -344,6 +344,26 @@ defmodule Cassandrax.KeyspaceTest do
       assert_raise(ArgumentError, msg, fn -> TestKeyspace.delete_all(TestData) end)
     end
 
+    test "raises on partial primary key" do
+      msg =
+        "Cannot perform Cassandrax.Keyspace.delete_all/2 with a partial partition key. " <>
+          "If you need data filtering, use `allow_filtering/0` to enable slow queries."
+
+      assert_raise(ArgumentError, msg, fn ->
+        TestData |> where(timestamp: "00:00") |> TestKeyspace.delete_all()
+      end)
+    end
+
+    test "raises on non-primary key" do
+      msg =
+        "Cannot perform Cassandrax.Keyspace.delete_all/2 with non-primary key filters. " <>
+          "If you need data filtering, use `allow_filtering/0` to enable slow queries."
+
+      assert_raise(ArgumentError, msg, fn ->
+        TestData |> where(id: "0") |> where(data: "1") |> TestKeyspace.delete_all()
+      end)
+    end
+
     test "deletes all entries that meet the filter requirement" do
       func = fn ->
         TestData
