@@ -26,7 +26,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   """
   def delete_all(keyspace, queryable, opts) when is_list(opts) do
     conn = keyspace.__conn__
-    opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
+    opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
     query = build_query_for_delete_all(queryable)
     {statement, values} = Cassandrax.Connection.delete_all(keyspace, query)
 
