@@ -27,7 +27,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   def delete_all(keyspace, queryable, opts) when is_list(opts) do
     conn = keyspace.__conn__
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
-    query = build_query_for_delete_all(queryable)
+    query = validate_queryable!(:delete_all, queryable)
     {statement, values} = Cassandrax.Connection.delete_all(keyspace, query)
 
     case Cassandrax.cql(conn, statement, values, opts) do
@@ -63,7 +63,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   Implementation for `Cassandrax.Keyspace.get/3`.
   """
   def get(keyspace, queryable, primary_key, opts) when is_list(primary_key) do
-    one(keyspace, build_query_for_get(queryable, primary_key), opts)
+    one(keyspace, validate_queryable!(:get, queryable, primary_key), opts)
   end
 
   def get(keyspace, queryable, primary_key, opts) when is_map(primary_key),
@@ -80,68 +80,68 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
-  defp build_query_for_delete_all(queryable),
-    do: build_query_for_function(:delete_all, Queryable.to_query(queryable))
+  defp validate_queryable!(action, queryable),
+    do: do_validate_queryable!(action, Queryable.to_query(queryable))
 
-  defp build_query_for_get(queryable, primary_key) when is_list(primary_key) do
+  defp validate_queryable!(action, queryable, primary_key) when is_list(primary_key) do
     query = queryable |> Queryable.to_query() |> Query.where(^primary_key)
-    build_query_for_function(:get, query)
+    do_validate_queryable!(action, query)
   end
 
-  defp build_query_for_get(_queryable, value) do
-    raise ArgumentError,
-          "#{function_name(:get)} requires a Keyword primary_key, got: #{inspect(value)}"
+  defp validate_queryable!(action, _queryable, value) do
+    msg = "#{function_name(action)} requires a Keyword primary_key, got: #{inspect(value)}"
+    raise ArgumentError, msg
   end
 
-  defp build_query_for_function(action, %{wheres: []}) do
+  defp do_validate_queryable!(action, %{wheres: []}) do
     raise ArgumentError, "cannot perform #{function_name(action)} with an empty primary key"
   end
 
-  defp build_query_for_function(_action, %{wheres: wheres} = query) do
+  defp do_validate_queryable!(action, %{wheres: wheres} = query) do
     %{allow_filtering: allow_filtering} = query
     schema = assert_schema!(query)
 
     [partition_keys | clustering_keys] = schema.__schema__(:pk)
     group = Enum.group_by(wheres, &(hd(&1) in partition_keys))
 
-    partition_wheres =
-      group |> Map.get(true, []) |> wheres_for_partition(partition_keys, allow_filtering)
+    partition_filters =
+      group |> Map.get(true, []) |> filters_for_partition(partition_keys, allow_filtering, action)
 
-    other_wheres =
-      group |> Map.get(false, []) |> wheres_for_others(clustering_keys, allow_filtering)
+    other_filters =
+      group |> Map.get(false, []) |> filters_for_others(clustering_keys, allow_filtering, action)
 
-    %{query | wheres: partition_wheres ++ other_wheres}
+    %{query | wheres: partition_filters ++ other_filters}
   end
 
-  defp wheres_for_partition(wheres, _partition_keys, true), do: wheres
+  defp filters_for_partition(wheres, _partition_keys, true, _action), do: wheres
 
-  defp wheres_for_partition(wheres, partition_keys, false) do
+  defp filters_for_partition(wheres, partition_keys, false, action) do
     wheres_by_key = Map.new(wheres, &{hd(&1), &1})
+
+    error_msg =
+      "Cannot perform #{function_name(action)} with a partial partition key. " <>
+        "If you need data filtering, use `allow_filtering/0` to enable slow queries."
 
     for partition_key <- partition_keys, into: [] do
       case Map.get(wheres_by_key, partition_key) do
-        [_, _, nil] ->
-          raise ArgumentError,
-                "Cannot perform Cassandrax.get/2 with a partial partition key. " <>
-                  "If you need data filtering, use `allow_filtering/0` to enable slow queries."
-
-        where ->
-          where
+        nil -> raise ArgumentError, error_msg
+        [_, _, nil] -> raise ArgumentError, error_msg
+        where -> where
       end
     end
   end
 
-  defp wheres_for_others(wheres, _clustering_keys, true), do: wheres
+  defp filters_for_others(wheres, _clustering_keys, true, _action), do: wheres
 
-  defp wheres_for_others(wheres, [], false), do: wheres
+  defp filters_for_others(wheres, [], false, _action), do: wheres
 
-  defp wheres_for_others(wheres, [clustering_keys], false) do
+  defp filters_for_others(wheres, [clustering_keys], false, action) do
     wheres_by_key = Map.new(wheres, &{hd(&1), &1})
 
     for {key, where} <- wheres_by_key, into: [] do
       unless Enum.member?(clustering_keys, key) do
         raise ArgumentError,
-              "Cannot perform Cassandrax.get/2 with non-primary key filters. " <>
+              "Cannot perform #{function_name(action)} with non-primary key filters. " <>
                 "If you need data filtering, use `allow_filtering/0` to enable slow queries."
       end
 
