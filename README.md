@@ -18,7 +18,7 @@ The docs can be found at [https://hexdocs.pm/cassandrax](https://hexdocs.pm/cass
 ```elixir
 def deps do
   [
-    {:cassandrax, "~> 0.3.0"}
+    {:cassandrax, "~> 0.4.0"}
   ]
 end
 ```
@@ -126,6 +126,7 @@ iex(4)> Cassandrax.cql(MyApp.MyCluster, statement)
 ```
 
 ### Migrations
+
 In future, we plan to support pure cassandrax migrations, but so far we still depend on Ecto to
 keep track of migrations. Below we present a strategy to keep cassandrax migrations separated
 from your main database migrations.
@@ -196,15 +197,17 @@ end
 Also, remember to include `MyApp.CassandraxRepo` migrations on your deploy scripts!
 
 ### CRUD
+
 Mutating data is as easy as it is with a regular Ecto schema. You can work
 straight with structs, or with changesets:
 
 #### Insert
+
 ```elixir
 iex(5)> user =  %UserById{id: 1, user_name: "alice"}
 %UserById{id: 1, user_name: "alice"}
 
-iex(6)> MyKeyspace.insert(user) 
+iex(6)> MyKeyspace.insert(user)
 {:ok, %UserById{__meta__: %Ecto.Schema.Metadata{:loaded, "user_by_id"}, id: 1, user_name: "alice"}}
 
 iex(7)> MyKeyspace.insert!(user)
@@ -212,6 +215,7 @@ iex(7)> MyKeyspace.insert!(user)
 ```
 
 #### Update
+
 ```elixir
 iex(8)> changeset = Changeset.change(user, user_name: "bob")
 #Ecto.Changeset<changes: %{user_name: "bob"}, ...>
@@ -224,6 +228,7 @@ iex(10)> MyKeyspace.update!(changeset)
 ```
 
 #### Delete
+
 ```elixir
 iex(11)> MyKeyspace.delete(user)
 {:ok, %UserById{__meta__: %Ecto.Schema.Metadata{:deleted, "user_by_id"}, id: 1, user_name: "bob"}}
@@ -256,11 +261,12 @@ iex(15)> MyKeyspace.batch(fn batch ->
 #### Querying
 
 ##### Disclaimer
+
 > One thing to keep in mind when it comes to querying is the API is still under
-development and, therefore, can still change in version prior to `0.1.0`.
+> development and, therefore, can still change in version prior to `0.1.0`.
 >
 > If you use it in production, be cautious when updating `cassandrax`, and make
-sure all your queries work correctly after installing the new version.
+> sure all your queries work correctly after installing the new version.
 
 `Cassandrax` queries are very similar to `Ecto`'s, you can use the `all/2`, `get/2`
 and `one/2` functions directly from your Keyspace module.
