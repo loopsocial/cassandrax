@@ -80,73 +80,72 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
-  defp build_query_for_delete_all(queryable) do
-    query = Queryable.to_query(queryable)
+  defp build_query_for_delete_all(queryable),
+    do: build_query_for_function(:delete_all, Queryable.to_query(queryable))
 
-    filters_input =
-      List.foldr(query.wheres, [], fn [key, operator, value], acc ->
-        if operator == :==, do: [{key, value} | acc], else: acc
-      end)
-
-    build_query_for_function(:delete_all, query, filters_input)
+  defp build_query_for_get(queryable, primary_key) when is_list(primary_key) do
+    query = queryable |> Queryable.to_query() |> Query.where(^primary_key)
+    build_query_for_function(:get, query)
   end
 
-  defp build_query_for_get(queryable, primary_key),
-    do: build_query_for_function(:get, Queryable.to_query(queryable), primary_key)
+  defp build_query_for_get(_queryable, value) do
+    raise ArgumentError,
+          "#{function_name(:get)} requires a Keyword primary_key, got: #{inspect(value)}"
+  end
 
-  defp build_query_for_function(action, _query, empty) when is_nil(empty) or empty == [] do
+  defp build_query_for_function(action, %{wheres: []}) do
     raise ArgumentError, "cannot perform #{function_name(action)} with an empty primary key"
   end
 
-  defp build_query_for_function(_action, query, primary_key) when is_list(primary_key) do
+  defp build_query_for_function(_action, %{wheres: wheres} = query) do
     %{allow_filtering: allow_filtering} = query
     schema = assert_schema!(query)
 
     [partition_keys | clustering_keys] = schema.__schema__(:pk)
-    {partition_filters, other_filters} = Keyword.split(primary_key, partition_keys)
+    group = Enum.group_by(wheres, &(hd(&1) in partition_keys))
 
-    partition_filters = filters_for_partition(allow_filtering, partition_keys, partition_filters)
-    other_filters = filters_for_others(allow_filtering, clustering_keys, other_filters)
+    partition_wheres =
+      group |> Map.get(true, []) |> wheres_for_partition(partition_keys, allow_filtering)
 
-    filters = Keyword.merge(partition_filters, other_filters)
-    query |> Query.where(^filters) |> Map.update!(:wheres, &Enum.uniq/1)
+    other_wheres =
+      group |> Map.get(false, []) |> wheres_for_others(clustering_keys, allow_filtering)
+
+    %{query | wheres: partition_wheres ++ other_wheres}
   end
 
-  defp build_query_for_function(action, _query, value) do
-    raise ArgumentError,
-          "#{function_name(action)} requires a Keyword primary_key, " <>
-            "got: #{inspect(value)}"
-  end
+  defp wheres_for_partition(wheres, _partition_keys, true), do: wheres
 
-  defp filters_for_partition(true, _partition_keys, filters), do: filters
+  defp wheres_for_partition(wheres, partition_keys, false) do
+    wheres_by_key = Map.new(wheres, &{hd(&1), &1})
 
-  defp filters_for_partition(false, partition_keys, partition_filters) do
     for partition_key <- partition_keys, into: [] do
-      case Keyword.get(partition_filters, partition_key) do
-        nil ->
+      case Map.get(wheres_by_key, partition_key) do
+        [_, _, nil] ->
           raise ArgumentError,
                 "Cannot perform Cassandrax.get/2 with a partial partition key. " <>
                   "If you need data filtering, use `allow_filtering/0` to enable slow queries."
 
-        value ->
-          {partition_key, value}
+        where ->
+          where
       end
     end
   end
 
-  defp filters_for_others(true, _clustering_keys, filters), do: filters
+  defp wheres_for_others(wheres, _clustering_keys, true), do: wheres
 
-  defp filters_for_others(false, [], filters), do: filters
+  defp wheres_for_others(wheres, [], false), do: wheres
 
-  defp filters_for_others(false, [clustering_keys], filters) do
-    for {clustering_key, value} <- filters, into: [] do
-      unless Enum.member?(clustering_keys, clustering_key) do
+  defp wheres_for_others(wheres, [clustering_keys], false) do
+    wheres_by_key = Map.new(wheres, &{hd(&1), &1})
+
+    for {key, where} <- wheres_by_key, into: [] do
+      unless Enum.member?(clustering_keys, key) do
         raise ArgumentError,
               "Cannot perform Cassandrax.get/2 with non-primary key filters. " <>
                 "If you need data filtering, use `allow_filtering/0` to enable slow queries."
       end
 
-      {clustering_key, value}
+      where
     end
   end
 
