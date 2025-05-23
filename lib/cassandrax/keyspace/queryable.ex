@@ -115,20 +115,20 @@ defmodule Cassandrax.Keyspace.Queryable do
 
   defp filters_for_partition(wheres, _partition_keys, true, _action), do: wheres
 
-  defp filters_for_partition(wheres, partition_keys, false, action) do
-    wheres_by_key = Map.new(wheres, &{hd(&1), &1})
-
-    error_msg =
-      "Cannot perform #{function_name(action)} with a partial partition key. " <>
-        "If you need data filtering, use `allow_filtering/0` to enable slow queries."
-
-    for partition_key <- partition_keys, into: [] do
-      case Map.get(wheres_by_key, partition_key) do
-        nil -> raise ArgumentError, error_msg
-        [_, _, nil] -> raise ArgumentError, error_msg
-        where -> where
-      end
+  @use_allow_filtering_alert_msg "If you need data filtering, use `allow_filtering/0` to enable slow queries."
+  defp filters_for_partition(wheres, partition_keys, false, action)
+       when length(wheres) == length(partition_keys) do
+    if Enum.find(wheres, fn [_, _, value] -> is_nil(value) end) do
+      msg = "Cannot perform #{function_name(action)} without nil value on partition key. "
+      raise ArgumentError, msg
+    else
+      wheres
     end
+  end
+
+  defp filters_for_partition(_wheres, _partition_keys, false, action) do
+    msg = "Cannot perform #{function_name(action)} with a partial partition key. "
+    raise ArgumentError, msg <> @use_allow_filtering_alert_msg
   end
 
   defp filters_for_others(wheres, _clustering_keys, true, _action), do: wheres
@@ -136,16 +136,11 @@ defmodule Cassandrax.Keyspace.Queryable do
   defp filters_for_others(wheres, [], false, _action), do: wheres
 
   defp filters_for_others(wheres, [clustering_keys], false, action) do
-    wheres_by_key = Map.new(wheres, &{hd(&1), &1})
-
-    for {key, where} <- wheres_by_key, into: [] do
-      unless Enum.member?(clustering_keys, key) do
-        raise ArgumentError,
-              "Cannot perform #{function_name(action)} with non-primary key filters. " <>
-                "If you need data filtering, use `allow_filtering/0` to enable slow queries."
-      end
-
-      where
+    if Enum.find(wheres, fn [key, _, _] -> key not in clustering_keys end) do
+      msg = "Cannot perform #{function_name(action)} with non-primary key filters. "
+      raise ArgumentError, msg <> @use_allow_filtering_alert_msg
+    else
+      wheres
     end
   end
 

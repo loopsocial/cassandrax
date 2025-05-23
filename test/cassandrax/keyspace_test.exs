@@ -18,19 +18,19 @@ defmodule Cassandrax.KeyspaceTest do
     alias Cassandrax.TestConn
 
     @type t :: %__MODULE__{}
-    @primary_key [:id, :timestamp]
+    @primary_key [[:id, :data], :timestamp]
 
     table "test_data" do
       field(:id, :string)
-      field(:timestamp, :string)
       field(:data, :string)
+      field(:timestamp, :string)
       field(:svalue, MapSetType)
     end
 
     def changeset(%__MODULE__{} = data, attrs \\ %{}) do
       data
-      |> cast(attrs, [:id, :timestamp, :data, :svalue])
-      |> validate_required([:id])
+      |> cast(attrs, [:id, :data, :timestamp, :svalue])
+      |> validate_required([:id, :data, :timestamp])
     end
 
     def create_table do
@@ -38,10 +38,10 @@ defmodule Cassandrax.KeyspaceTest do
         CREATE TABLE IF NOT EXISTS
         #{TestKeyspace.__keyspace__()}.test_data(
         id text,
-        timestamp text,
         data text,
+        timestamp text,
         svalue set<text>,
-        PRIMARY KEY (id, timestamp))
+        PRIMARY KEY ((id, data), timestamp))
         WITH CLUSTERING ORDER BY (timestamp DESC)
       """
 
@@ -350,7 +350,7 @@ defmodule Cassandrax.KeyspaceTest do
           "If you need data filtering, use `allow_filtering/0` to enable slow queries."
 
       assert_raise(ArgumentError, msg, fn ->
-        TestData |> where(timestamp: "00:00") |> TestKeyspace.delete_all()
+        TestData |> where(id: "0") |> TestKeyspace.delete_all()
       end)
     end
 
@@ -360,21 +360,19 @@ defmodule Cassandrax.KeyspaceTest do
           "If you need data filtering, use `allow_filtering/0` to enable slow queries."
 
       assert_raise(ArgumentError, msg, fn ->
-        TestData |> where(id: "0") |> where(data: "1") |> TestKeyspace.delete_all()
+        TestData
+        |> where(id: "0")
+        |> where(data: "1")
+        |> where(svalue: ["x"])
+        |> TestKeyspace.delete_all()
       end)
     end
 
     test "deletes all entries that meet the filter requirement" do
-      func = fn ->
-        TestData
-        |> where(id: "0")
-        |> TestKeyspace.all()
-        |> length()
-      end
-
+      query = TestData |> where(id: "0") |> where(data: "1")
+      func = fn -> query |> TestKeyspace.all() |> length() end
       assert func.() == 1
-
-      TestData |> where(id: "0") |> TestKeyspace.delete_all()
+      TestKeyspace.delete_all(query)
       assert func.() == 0
     end
   end
