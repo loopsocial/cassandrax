@@ -26,6 +26,12 @@ defmodule Cassandrax.Connection do
     {statement, values}
   end
 
+  def delete_all(keyspace, queryable) do
+    from = from(queryable, keyspace.__keyspace__)
+    {where, filters} = where(queryable)
+    {["DELETE", from, where], filters}
+  end
+
   defp select(%{select: [], distinct: []}), do: ["SELECT *"]
 
   defp select(%{select: fields, distinct: []}) when is_list(fields),

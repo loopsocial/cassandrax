@@ -100,6 +100,9 @@ defmodule Cassandrax.Keyspace do
       def all(queryable, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.all(__MODULE__, queryable, opts)
 
+      def delete_all(queryable, opts \\ []),
+        do: Cassandrax.Keyspace.Queryable.delete_all(__MODULE__, queryable, opts)
+
       def stream(queryable, opts \\ []),
         do: Cassandrax.Keyspace.Queryable.stream(__MODULE__, queryable, opts)
 
@@ -258,6 +261,20 @@ defmodule Cassandrax.Keyspace do
               struct_or_changeset :: Ecto.Schema.t() | Ecto.Changeset.t(),
               opts :: Keyword.t()
             ) :: Cassandrax.Schema.t()
+
+  @doc """
+  Deletes all entries from the data store that matches the given query.
+
+  May raise Xandra.Error if query validation fails.
+
+  ## Example
+  ```
+  query = where(User, status: "deactivated")
+  MyKeyspace.delete_all(query)
+  ```
+  """
+  @callback delete_all(queryable :: Cassandrax.Queryable.t(), opts :: Keyword.t()) ::
+              :ok | {:error, any()}
 
   @doc """
   Fetches all entries from the data store that matches the given query.

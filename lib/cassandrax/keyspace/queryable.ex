@@ -21,6 +21,21 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
+  @doc """
+  Implementation for `Cassandrax.Keyspace.delete_all/2`.
+  """
+  def delete_all(keyspace, queryable, opts) when is_list(opts) do
+    conn = keyspace.__conn__
+    opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
+    query = validate_queryable!(:delete_all, queryable)
+    {statement, values} = Cassandrax.Connection.delete_all(keyspace, query)
+
+    case Cassandrax.cql(conn, statement, values, opts) do
+      {:ok, _} -> :ok
+      {:error, error} -> raise error
+    end
+  end
+
   defp convert_results(%{schema: schema}, results) do
     results
     |> Stream.map(&schema.convert/1)
@@ -48,7 +63,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   Implementation for `Cassandrax.Keyspace.get/3`.
   """
   def get(keyspace, queryable, primary_key, opts) when is_list(primary_key) do
-    one(keyspace, query_for_get(queryable, primary_key), opts)
+    one(keyspace, validate_queryable!(:get, queryable, primary_key), opts)
   end
 
   def get(keyspace, queryable, primary_key, opts) when is_map(primary_key),
@@ -65,61 +80,67 @@ defmodule Cassandrax.Keyspace.Queryable do
     end
   end
 
-  defp query_for_get(_queryable, empty) when is_nil(empty) or empty == [] do
-    raise ArgumentError, "cannot perform Cassandrax.Keyspace.get/2 with an empty primary key"
+  defp validate_queryable!(action, queryable),
+    do: do_validate_queryable!(action, Queryable.to_query(queryable))
+
+  defp validate_queryable!(action, queryable, primary_key) when is_list(primary_key) do
+    query = queryable |> Queryable.to_query() |> Query.where(^primary_key)
+    do_validate_queryable!(action, query)
   end
 
-  defp query_for_get(queryable, primary_key) when is_list(primary_key) do
-    query = Queryable.to_query(queryable)
+  defp validate_queryable!(action, _queryable, value) do
+    msg = "#{function_name(action)} requires a Keyword primary_key, got: #{inspect(value)}"
+    raise ArgumentError, msg
+  end
+
+  defp do_validate_queryable!(action, %{wheres: []}) do
+    raise ArgumentError, "Cannot perform #{function_name(action)} with an empty primary key"
+  end
+
+  defp do_validate_queryable!(action, %{wheres: wheres} = query) do
     %{allow_filtering: allow_filtering} = query
     schema = assert_schema!(query)
 
     [partition_keys | clustering_keys] = schema.__schema__(:pk)
-    {partition_filters, other_filters} = Keyword.split(primary_key, partition_keys)
+    group = Enum.group_by(wheres, &(hd(&1) in partition_keys))
 
-    partition_filters = filters_for_partition(allow_filtering, partition_keys, partition_filters)
-    other_filters = filters_for_others(allow_filtering, clustering_keys, other_filters)
+    partition_filters =
+      group |> Map.get(true, []) |> filters_for_partition(partition_keys, allow_filtering, action)
 
-    filters = Keyword.merge(partition_filters, other_filters)
+    other_filters =
+      group |> Map.get(false, []) |> filters_for_others(clustering_keys, allow_filtering, action)
 
-    Query.where(query, ^filters)
+    %{query | wheres: partition_filters ++ other_filters}
   end
 
-  defp query_for_get(_queryable, value) do
-    raise ArgumentError,
-          "Cassandrax.Keyspace.get/2 requires a Keyword primary_key, " <>
-            "got: #{inspect(value)}"
-  end
+  defp filters_for_partition(wheres, _partition_keys, true, _action), do: wheres
 
-  defp filters_for_partition(true, _partition_keys, filters), do: filters
-
-  defp filters_for_partition(false, partition_keys, partition_filters) do
-    for partition_key <- partition_keys, into: [] do
-      case Keyword.get(partition_filters, partition_key) do
-        nil ->
-          raise ArgumentError,
-                "Cannot perform Cassandrax.get/2 with a partial partition key. " <>
-                  "If you need data filtering, use `allow_filtering/0` to enable slow queries."
-
-        value ->
-          {partition_key, value}
-      end
+  @use_allow_filtering_alert_msg "If you need data filtering, use `allow_filtering/0` to enable slow queries."
+  defp filters_for_partition(wheres, partition_keys, false, action)
+       when length(wheres) == length(partition_keys) do
+    if Enum.find(wheres, fn [_, _, value] -> is_nil(value) end) do
+      msg = "Cannot perform #{function_name(action)} without nil value on partition key. "
+      raise ArgumentError, msg
+    else
+      wheres
     end
   end
 
-  defp filters_for_others(true, _clustering_keys, filters), do: filters
+  defp filters_for_partition(_wheres, _partition_keys, false, action) do
+    msg = "Cannot perform #{function_name(action)} with a partial partition key. "
+    raise ArgumentError, msg <> @use_allow_filtering_alert_msg
+  end
 
-  defp filters_for_others(false, [], filters), do: filters
+  defp filters_for_others(wheres, _clustering_keys, true, _action), do: wheres
 
-  defp filters_for_others(false, [clustering_keys], filters) do
-    for {clustering_key, value} <- filters, into: [] do
-      unless Enum.member?(clustering_keys, clustering_key) do
-        raise ArgumentError,
-              "Cannot perform Cassandrax.get/2 with non-primary key filters. " <>
-                "If you need data filtering, use `allow_filtering/0` to enable slow queries."
-      end
+  defp filters_for_others(wheres, [], false, _action), do: wheres
 
-      {clustering_key, value}
+  defp filters_for_others(wheres, [clustering_keys], false, action) do
+    if Enum.find(wheres, fn [key, _, _] -> key not in clustering_keys end) do
+      msg = "Cannot perform #{function_name(action)} with non-primary key filters. "
+      raise ArgumentError, msg <> @use_allow_filtering_alert_msg
+    else
+      wheres
     end
   end
 
@@ -130,4 +151,7 @@ defmodule Cassandrax.Keyspace.Queryable do
       raise(Cassandrax.QueryError,
         message: "Expected a query with a schema, got: #{inspect(query)}"
       )
+
+  defp function_name(:get), do: "Cassandrax.Keyspace.get/2"
+  defp function_name(:delete_all), do: "Cassandrax.Keyspace.delete_all/2"
 end
