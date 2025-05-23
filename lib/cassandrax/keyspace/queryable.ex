@@ -94,7 +94,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   end
 
   defp do_validate_queryable!(action, %{wheres: []}) do
-    raise ArgumentError, "cannot perform #{function_name(action)} with an empty primary key"
+    raise ArgumentError, "Cannot perform #{function_name(action)} with an empty primary key"
   end
 
   defp do_validate_queryable!(action, %{wheres: wheres} = query) do
