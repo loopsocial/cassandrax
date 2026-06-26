@@ -3,7 +3,7 @@ defmodule Cassandrax.Connection do
 
   def all(keyspace, queryable) do
     select = select(queryable)
-    from = from(queryable, keyspace.__keyspace__)
+    from = from(queryable, keyspace.__keyspace__())
     {where, filters} = where(queryable)
     group_by = group_by(queryable)
     order_by = order_by(queryable)
@@ -27,7 +27,7 @@ defmodule Cassandrax.Connection do
   end
 
   def delete_all(keyspace, queryable) do
-    from = from(queryable, keyspace.__keyspace__)
+    from = from(queryable, keyspace.__keyspace__())
     {where, filters} = where(queryable)
     {["DELETE", from, where], filters}
   end

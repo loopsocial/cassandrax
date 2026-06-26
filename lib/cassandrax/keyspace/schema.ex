@@ -57,7 +57,7 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.insert/2`.
   """
   def insert(keyspace, %Changeset{} = changeset, opts) do
-    conn = keyspace.__conn__
+    conn = keyspace.__conn__()
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
     with {:ok, {statement, values, changeset}} <- setup_insert(keyspace, changeset),
@@ -77,7 +77,7 @@ defmodule Cassandrax.Keyspace.Schema do
     schema = struct.__struct__
     fields = schema.__schema__(:fields)
     table = schema.__schema__(:source)
-    keyspace_name = keyspace.__keyspace__
+    keyspace_name = keyspace.__keyspace__()
 
     changeset = apply_defaults(changeset, struct, fields)
     statement = Cassandrax.Connection.insert(keyspace_name, table, changeset.changes)
@@ -115,7 +115,7 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.update/2`.
   """
   def update(keyspace, %Ecto.Changeset{} = changeset, opts) do
-    conn = keyspace.__conn__
+    conn = keyspace.__conn__()
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
     with {:ok, {statement, values, changeset}} <- setup_update(keyspace, changeset),
@@ -135,7 +135,7 @@ defmodule Cassandrax.Keyspace.Schema do
     schema = struct.__struct__
     primary_key = schema.__schema__(:pk) |> List.flatten()
     table = schema.__schema__(:source)
-    keyspace_name = keyspace.__keyspace__
+    keyspace_name = keyspace.__keyspace__()
 
     statement = Cassandrax.Connection.update(keyspace_name, table, changeset.changes, primary_key)
     primary_key_fields = Enum.map(primary_key, fn field -> {field, Map.get(struct, field)} end)
@@ -154,7 +154,7 @@ defmodule Cassandrax.Keyspace.Schema do
   Implementation for `Cassandrax.Keyspace.delete/2`.
   """
   def delete(keyspace, %Ecto.Changeset{} = changeset, opts) do
-    conn = keyspace.__conn__
+    conn = keyspace.__conn__()
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
 
     with {:ok, {statement, values, changeset}} <- setup_delete(keyspace, changeset),
@@ -174,7 +174,7 @@ defmodule Cassandrax.Keyspace.Schema do
     schema = struct.__struct__
     primary_key = schema.__schema__(:pk) |> List.flatten()
     table = schema.__schema__(:source)
-    keyspace_name = keyspace.__keyspace__
+    keyspace_name = keyspace.__keyspace__()
 
     statement = Cassandrax.Connection.delete(keyspace_name, table, primary_key)
     primary_key_fields = Enum.map(primary_key, fn field -> {field, Map.get(struct, field)} end)

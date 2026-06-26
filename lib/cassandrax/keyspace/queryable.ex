@@ -9,7 +9,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   Implementation for `Cassandrax.Keyspace.all/2`.
   """
   def all(keyspace, queryable, opts) when is_list(opts) do
-    conn = keyspace.__conn__
+    conn = keyspace.__conn__()
     opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
     queryable = Queryable.to_query(queryable)
 
@@ -25,7 +25,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   Implementation for `Cassandrax.Keyspace.delete_all/2`.
   """
   def delete_all(keyspace, queryable, opts) when is_list(opts) do
-    conn = keyspace.__conn__
+    conn = keyspace.__conn__()
     opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
     query = validate_queryable!(:delete_all, queryable)
     {statement, values} = Cassandrax.Connection.delete_all(keyspace, query)
@@ -49,7 +49,7 @@ defmodule Cassandrax.Keyspace.Queryable do
   Implementation for `Cassandrax.Keyspace.stream/2`.
   """
   def stream(keyspace, queryable, opts) when is_list(opts) do
-    conn = keyspace.__conn__
+    conn = keyspace.__conn__()
     opts = keyspace.__default_options__(:read) |> Keyword.merge(opts)
     queryable = Queryable.to_query(queryable)
 

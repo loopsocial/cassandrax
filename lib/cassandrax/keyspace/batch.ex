@@ -9,7 +9,7 @@ defmodule Cassandrax.Keyspace.Batch do
   def run(keyspace, fun, opts) do
     type = if Keyword.get(opts, :logged, false), do: :logged, else: :unlogged
 
-    Xandra.Cluster.run(keyspace.__conn__, fn conn ->
+    Xandra.Cluster.run(keyspace.__conn__(), fn conn ->
       xandra_batch = Xandra.Batch.new(type)
       batch = %Cassandrax.Keyspace.Batch{conn: conn, xandra_batch: xandra_batch} |> fun.()
       opts = keyspace.__default_options__(:write) |> Keyword.merge(opts)
